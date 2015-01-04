@@ -10,7 +10,8 @@ L.latLng(52.554281,13.414820),
 var candidates_list = [],
     transitions = [],
     viterbi = [],
-    selectedNode;
+    candidate_markers = [],
+    selectedNodes = [];
 
 function trellisLayout(vspace, hspace, nodeSize) {
   return {
@@ -22,24 +23,77 @@ function trellisLayout(vspace, hspace, nodeSize) {
   };
 }
 
+// Returns color on grandient that matches to a given f in [0, 1]
+function computeColor(f) {
+  var start = [255, 0, 0],
+      end = [0, 255, 0],
+      hex = '#',
+      hexVal,
+      i;
+  for (i = 0; i < 3; i++) {
+    hexVal = Math.floor((1-f) * start[i] + f * end[i]).toString(16);
+    if (hexVal.length < 2) {
+      hexVal = '0' + hexVal;
+    }
+    hex += hexVal;
+  }
+}
+
 function highlightTransition(idx) {
-  if (idx[0] === selectedNode[0]) {
+  var i = idx[0],
+      j = idx[1],
+      start, end;
+
+  if (i === selectedNode[0]) {
     return;
   }
-  var start = idx[0] < selectedNode[0] ? idx : selectedNode,
-      end   = idx[0] > selectedNode[0] ? idx : selectedNode;
-  transitionInfo(transitions[i])
+
+  start = idx[0] < selectedNode[0] ? idx : selectedNode,
+  end   = idx[0] > selectedNode[0] ? idx : selectedNode;
+  transitionInfo(transitions[i]);
 }
+
 function highlightNode(idx) {
-  var svg = d3.select("#trellis");
-  selectedNode = idx;
+  function isCompatible(n1, n2) {
+    return Math.abs(n1[0]-n2[0]) == 1;
+  }
+
+  var svg = d3.select("#trellis"),
+      startIdx, endIdx;
+  if (selectedNodes.length > 0) {
+    selectedNodes = selectedNodes.filter(function(n) { return isCompatible(n, idx); });
+  }
+
+  selectedNodes.push(idx);
+  if (selectedNodes.length > 2) selectedNodes.splice(0, 1);
+
+  startIdx = selectedNodes[0];
+  if (selectedNodes.length > 1) {
+    endIdx = selectedNodes[1];
+    if (startIdx[0] > endIdx[0]) {
+      startIdx = selectedNodes[1];
+      endIdx = selectedNodes[0];
+    }
+  }
+
   svg.selectAll(".edge")
     .style("display", function(d) {
-      if ((d.startIdx[0] === idx[0] && d.startIdx[1] === idx[1]) ||
-          (d.endIdx[0]   === idx[0] &&  d.endIdx[1]  === idx[1])) {
-        return 'inline';
+      var selected = ((d.startIdx[0] === startIdx[0] && d.startIdx[1] === startIdx[1]) ||
+                      (d.endIdx[0]   === startIdx[0] && d.endIdx[1]  === startIdx[1]));
+      if (endIdx) {
+        selected = selected && ((d.startIdx[0] === endIdx[0] && d.startIdx[1] === endIdx[1]) ||
+                                (d.endIdx[0]   === endIdx[0] && d.endIdx[1]  === endIdx[1]));
+      }
+
+      return selected ? 'inline' : 'none';
+    });
+  svg.selectAll(".node")
+    .style("fill", function(d) {
+      if ((d.idx[0] === startIdx[0] && d.idx[1] === startIdx[1]) ||
+          endIdx && (d.idx[0] === endIdx[0]   && d.idx[1] === endIdx[1])) {
+        return '#777';
       } else {
-        return 'none';
+        return computeColor(viterbi[d.idx[0]][d.idx[1]]);
       }
     });
 }
@@ -111,16 +165,14 @@ function printDiagramm(lists, transitions, viterbi) {
       .attr("r", layout.getNodeSize())
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; })
-      .on('click', function(d) {highlightNode(d.idx);})
-      .on('mouseover', function(d) {highlightTransition(d.idx);});
+      .on('click', function(d) {highlightNode(d.idx);});
   svg.selectAll('.label').data(nodes)
       .enter().append("text")
       .attr("class", "label")
       .attr('x', function(d) { return layout.getLabelX.apply(null, d.idx); })
       .attr('y', function(d) { return layout.getLabelY.apply(null, d.idx); })
       .text(function(d) {return d.idx[1]; })
-      .on('click', function(d) {highlightNode(d.idx);})
-      .on('mouseover', function(d) {highlightTransition(d.idx);});
+      .on('click', function(d) {highlightNode(d.idx);});
 }
 
 var color_table = [
@@ -140,57 +192,22 @@ var darkened_color_table = [
 
 var info = document.getElementById('info');
 
-
-function showTransitions(e)
-{
-  var marker = e.target,
-      layer = marker.transitionLayer,
-      start = L.latLng(marker.origin[0]),
-      line,
-      end,
-      i;
-
-  if (!marker.targets) {
-    return;
-  }
-
-  layer.clearLayers();
-  for (i = 0; i < marker.targets.length; i++) {
-    end = L.latLng(marker.targets[i][0]);
-    line = L.polyline([start, end], {weight: 2, color: '#000', opacity: 0.5});
-    line.transition = marker.transitions[i];
-    line.on('mouseover', showInfo);
-    line.on('mouseout', function(e) { info.innerHTML = ''; e.target.setStyle({weight: 2}); });
-    layer.addLayer(line);
-  }
-}
-
-function showCandidates(marker, i, color) {
-  var candidates = candidates_list[i],
-      idx,
+function addCandidates(layer, candidates, color) {
+  var idx,
       c,
-      size,
-      m;
-  marker.candidateLayer.clearLayers();
+      size = 8,
+      m,
+      markers = [];
 
   for (idx = 0; idx < candidates.length; idx++)
   {
     c = L.latLng(candidates[idx][0]);
-    size = -50/Math.log(viterbi[i][idx] + 0.00001);
-    m = L.circleMarker(c, {stroke: false, fill: true, fillColor: color, radius: (2+size), fillOpacity: 0.5});
-    m.transitionLayer = L.featureGroup().addTo(map);
-    m.origin = candidates_list[i][idx];
-    if (i < candidates_list.length-1)
-    {
-      m.targets = candidates_list[i+1];
-      m.transitions = transitions[i][idx];
-    }
-    m.on('click', showTransitions);
-    marker.candidateLayer.addLayer(m);
+    m = L.circleMarker(c, {stroke: false, fill: true, fillColor: color, radius: size, fillOpacity: 0.5});
+    layer.addLayer(m);
+    markers.push(m);
   }
-}
 
-function hover(d, idx) {
+  return markers;
 }
 
 var lrm = L.Routing.control({
@@ -202,10 +219,6 @@ var lrm = L.Routing.control({
             'marker-color': color_table[i % color_table.length]
           })
         });
-        marker.on('click', function (e) {
-          showCandidates(e.target, i, darkened_color_table[i % color_table.length]);
-        });
-        marker.candidateLayer = L.featureGroup().addTo(map);
         return marker;
       }
     }).addTo(map),
@@ -219,6 +232,13 @@ function routingShim(response, inputWaypoints, callback, context) {
   viterbi = response.debug.viterbi;
 
   printDiagramm(candidates_list, transitions, viterbi);
+
+  var candidateLayer = L.featureGroup().addTo(map),
+      i;
+  for (i = 0; i < candidates_list.length; i++) {
+      markers = addCandidates(candidateLayer, candidates_list[i], darkened_color_table[i % color_table.length]);
+      candidate_markers.push(markers);
+  }
 
   routeDoneFunc.call(router, response, inputWaypoints, callback, context);
 }
