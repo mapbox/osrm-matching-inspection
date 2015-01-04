@@ -216,6 +216,7 @@
 	L.extend(L.Routing, require('./L.Routing.Line'));
 	L.extend(L.Routing, require('./L.Routing.Plan'));
 	L.extend(L.Routing, require('./L.Routing.OSRM'));
+	L.extend(L.Routing, require('./L.Routing.GraphHopper'));
 
 	L.Routing.Control = L.Routing.Itinerary.extend({
 		options: {
@@ -486,7 +487,7 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./L.Routing.Itinerary":4,"./L.Routing.Line":6,"./L.Routing.OSRM":8,"./L.Routing.Plan":9}],3:[function(require,module,exports){
+},{"./L.Routing.GraphHopper":4,"./L.Routing.Itinerary":5,"./L.Routing.Line":7,"./L.Routing.OSRM":9,"./L.Routing.Plan":10}],3:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -572,13 +573,13 @@
 		},
 
 		formatInstruction: function(instr, i) {
-			if (instr.type !== undefined) {
+			if (instr.text === undefined) {
 				return L.Util.template(this._getInstructionTemplate(instr, i),
 					L.extend({
-							exitStr: L.Routing.Localization[this.options.language].formatOrder(instr.exit),
-							dir: L.Routing.Localization[this.options.language].directions[instr.direction]
-						},
-						instr));
+						exitStr: L.Routing.Localization[this.options.language].formatOrder(instr.exit),
+						dir: L.Routing.Localization[this.options.language].directions[instr.direction]
+					},
+					instr));
 			} else {
 				return instr.text;
 			}
@@ -616,8 +617,7 @@
 					strings = L.Routing.Localization[this.options.language].instructions[type];
 
 			return strings[0] + (strings.length > 1 && instr.road ? strings[1] : '');
-		},
-
+		}
 	});
 
 	module.exports = L.Routing;
@@ -625,7 +625,200 @@
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./L.Routing.Localization":7}],4:[function(require,module,exports){
+},{"./L.Routing.Localization":8}],4:[function(require,module,exports){
+(function (global){
+(function() {
+	'use strict';
+
+	var L = (typeof window !== "undefined" ? window.L : typeof global !== "undefined" ? global.L : null);
+
+	L.Routing = L.Routing || {};
+	L.extend(L.Routing, require('./L.Routing.Util'));
+	L.extend(L.Routing, require('./L.Routing.Waypoint'));
+
+	L.Routing.GraphHopper = L.Class.extend({
+		options: {
+			serviceUrl: 'https://graphhopper.com/api/1/route',
+			timeout: 30 * 1000
+		},
+
+		initialize: function(apiKey, options) {
+			this._apiKey = apiKey;
+			L.Util.setOptions(this, options);
+		},
+
+		route: function(waypoints, callback, context, options) {
+			var timedOut = false,
+				wps = [],
+				url,
+				timer,
+				wp,
+				i;
+
+			options = options || {};
+			url = this.buildRouteUrl(waypoints, options);
+
+			timer = setTimeout(function() {
+								timedOut = true;
+								callback.call(context || callback, {
+									status: -1,
+									message: 'GraphHopper request timed out.'
+								});
+							}, this.options.timeout);
+
+			// Create a copy of the waypoints, since they
+			// might otherwise be asynchronously modified while
+			// the request is being processed.
+			for (i = 0; i < waypoints.length; i++) {
+				wp = waypoints[i];
+				wps.push(new L.Routing.Waypoint(wp.latLng, wp.name, wp.options));
+			}
+
+			L.Routing._jsonp(url, function(data) {
+				clearTimeout(timer);
+				if (!timedOut) {
+					this._routeDone(data, wps, callback, context);
+				}
+			}, this, 'callback');
+
+			return this;
+		},
+
+		_routeDone: function(response, inputWaypoints, callback, context) {
+			var alts = [],
+			    mappedWaypoints,
+			    coordinates,
+			    i,
+			    path;
+
+			context = context || callback;
+			if (response.info.errors && response.info.errors.length) {
+				callback.call(context, {
+					// TODO: include all errors
+					status: response.info.errors[0].details,
+					message: response.info.errors[0].message
+				});
+				return;
+			}
+
+			for (i = 0; i < response.paths.length; i++) {
+				path = response.paths[i];
+				coordinates = L.Routing._decodePolyline(path.points, 5);
+				mappedWaypoints =
+					this._mapWaypointIndices(inputWaypoints, path.instructions, coordinates);
+
+				alts.push({
+					name: '',
+					coordinates: coordinates,
+					instructions: this._convertInstructions(path.instructions),
+					summary: {
+						totalDistance: path.distance,
+						totalTime: path.time / 1000,
+					},
+					inputWaypoints: inputWaypoints,
+					actualWaypoints: mappedWaypoints.waypoints,
+					waypointIndices: mappedWaypoints.waypointIndices
+				});
+			}
+
+			callback.call(context, null, alts);
+		},
+
+		_toWaypoints: function(inputWaypoints, vias) {
+			var wps = [],
+			    i;
+			for (i = 0; i < vias.length; i++) {
+				wps.push(L.Routing.waypoint(L.latLng(vias[i]),
+				                            inputWaypoints[i].name,
+				                            inputWaypoints[i].options));
+			}
+
+			return wps;
+		},
+
+		buildRouteUrl: function(waypoints, options) {
+			var computeInstructions =
+				!(options && options.geometryOnly),
+				locs = [],
+				i;
+
+			for (i = 0; i < waypoints.length; i++) {
+				locs.push('point=' + waypoints[i].latLng.lat + ',' + waypoints[i].latLng.lng);
+			}
+
+			return this.options.serviceUrl + '?' +
+				locs.join('&') +
+				'&instructions=' + computeInstructions +
+				'&type=jsonp' +
+				'&key=' + this._apiKey;
+		},
+
+		_convertInstructions: function(instructions) {
+			var signToType = {
+					'-3': 'SharpLeft',
+					'-2': 'Left',
+					'-1': 'SlightLeft',
+					0: 'Straight',
+					1: 'SlightRight',
+					2: 'Right',
+					3: 'SharpRight',
+					4: 'DestinationReached',
+					5: 'WaypointReached'
+				},
+				result = [],
+			    i,
+			    instr;
+
+			for (i = 0; i < instructions.length; i++) {
+				instr = instructions[i];
+				result.push({
+					type: signToType[instr.sign],
+					text: instr.text,
+					distance: instr.distance,
+					time: instr.time / 1000,
+					index: instr.interval[0]
+				});
+			}
+
+			return result;
+		},
+
+		_mapWaypointIndices: function(waypoints, instructions, coordinates) {
+			var wps = [],
+				wpIndices = [],
+			    i,
+			    idx;
+
+			wpIndices.push(0);
+			wps.push(new L.Routing.Waypoint(coordinates[0], waypoints[0].name));
+
+			for (i = 0; i < instructions.length; i++) {
+				if (instructions[i].sign === 5) { // VIA_REACHED
+					idx = instructions[i].interval[0];
+					wpIndices.push(idx);
+					wps.push(new L.Routing.Waypoint(coordinates[idx], waypoints[wps.length + 1].name));
+				}
+			}
+
+			wpIndices.push(coordinates.length - 1);
+			wps.push(new L.Routing.Waypoint(coordinates[coordinates.length - 1], waypoints[waypoints.length - 1].name));
+
+			return {
+				waypointIndices: wpIndices,
+				waypoints: wps
+			};
+		}
+	});
+
+	L.Routing.graphHopper = function(options) {
+		return new L.Routing.GraphHopper(options);
+	};
+
+	module.exports = L.Routing;
+})();
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./L.Routing.Util":11,"./L.Routing.Waypoint":12}],5:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -825,7 +1018,7 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./L.Routing.Formatter":3,"./L.Routing.ItineraryBuilder":5}],5:[function(require,module,exports){
+},{"./L.Routing.Formatter":3,"./L.Routing.ItineraryBuilder":6}],6:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -869,7 +1062,7 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -1015,7 +1208,7 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function() {
 	'use strict';
 	L.Routing = L.Routing || {};
@@ -1248,7 +1441,7 @@
 	module.exports = L.Routing;
 })();
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -1260,20 +1453,8 @@
 	/* jshint camelcase: false */
 
 	L.Routing = L.Routing || {};
+	L.extend(L.Routing, require('./L.Routing.Util'));
 	L.extend(L.Routing, require('./L.Routing.Waypoint'));
-
-	L.Routing._jsonpCallbackId = 0;
-	L.Routing._jsonp = function(url, callback, context, jsonpParam) {
-		var callbackId = '_l_routing_machine_' + (L.Routing._jsonpCallbackId++),
-		    script;
-		url += '&' + jsonpParam + '=' + callbackId;
-		window[callbackId] = L.Util.bind(callback, context);
-		script = document.createElement('script');
-		script.type = 'text/javascript';
-		script.src = url;
-		script.id = callbackId;
-		document.getElementsByTagName('head')[0].appendChild(script);
-	};
 
 	L.Routing.OSRM = L.Class.extend({
 		options: {
@@ -1340,7 +1521,7 @@
 				return;
 			}
 
-			coordinates = this._decode(response.route_geometry, 6);
+			coordinates = L.Routing._decodePolyline(response.route_geometry, 6);
 			actualWaypoints = this._toWaypoints(inputWaypoints, response.via_points);
 			alts = [{
 				name: response.route_name.join(', '),
@@ -1354,7 +1535,7 @@
 
 			if (response.alternative_geometries) {
 				for (i = 0; i < response.alternative_geometries.length; i++) {
-					coordinates = this._decode(response.alternative_geometries[i], 6);
+					coordinates = L.Routing._decodePolyline(response.alternative_geometries[i], 6);
 					alts.push({
 						name: response.alternative_names[i].join(', '),
 						coordinates: coordinates,
@@ -1372,7 +1553,9 @@
 				}
 			}
 
-			this._saveHintData(response, inputWaypoints);
+			if (response.hint_data) {
+				this._saveHintData(response.hint_data, inputWaypoints);
+			}
 			callback.call(context, null, alts);
 		},
 
@@ -1427,9 +1610,8 @@
 			return location.lat + ',' + location.lng;
 		},
 
-		_saveHintData: function(route, waypoints) {
-			var hintData = route.hint_data,
-			    loc;
+		_saveHintData: function(hintData, waypoints) {
+			var loc;
 			this._hints = {
 				checksum: hintData.checksum,
 				locations: {}
@@ -1528,7 +1710,7 @@
 			case 7:
 				return 'Left';
 			case 8:
-				return 'SlightRight';
+				return 'SlightLeft';
 			case 9:
 				return 'WaypointReached';
 			case 10:
@@ -1562,7 +1744,7 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./L.Routing.Waypoint":10}],9:[function(require,module,exports){
+},{"./L.Routing.Util":11,"./L.Routing.Waypoint":12}],10:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
@@ -1980,7 +2162,66 @@
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./L.Routing.Autocomplete":1,"./L.Routing.Waypoint":10}],10:[function(require,module,exports){
+},{"./L.Routing.Autocomplete":1,"./L.Routing.Waypoint":12}],11:[function(require,module,exports){
+(function() {
+	'use strict';
+
+	L.Routing = L.Routing || {};
+
+	L.Routing._jsonpCallbackId = 0;
+	L.Routing._jsonp = function(url, callback, context, jsonpParam) {
+		var callbackId = '_l_routing_machine_' + (L.Routing._jsonpCallbackId++),
+			script;
+		url += '&' + jsonpParam + '=' + callbackId;
+		window[callbackId] = L.Util.bind(callback, context);
+		script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = url;
+		script.id = callbackId;
+		document.getElementsByTagName('head')[0].appendChild(script);
+	};
+
+	// Adapted from
+	// https://github.com/DennisSchiefer/Project-OSRM-Web/blob/develop/WebContent/routing/OSRM.RoutingGeometry.js
+	L.Routing._decodePolyline = function(encoded, precision) {
+		var len = encoded.length,
+		    index=0,
+		    lat=0,
+		    lng = 0,
+		    array = [];
+
+		precision = Math.pow(10, -precision);
+
+		while (index < len) {
+			var b,
+			    shift = 0,
+			    result = 0;
+			do {
+				b = encoded.charCodeAt(index++) - 63;
+				result |= (b & 0x1f) << shift;
+				shift += 5;
+			} while (b >= 0x20);
+			var dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+			lat += dlat;
+			shift = 0;
+			result = 0;
+			do {
+				b = encoded.charCodeAt(index++) - 63;
+				result |= (b & 0x1f) << shift;
+				shift += 5;
+			} while (b >= 0x20);
+			var dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+			lng += dlng;
+			//array.push( {lat: lat * precision, lng: lng * precision} );
+			array.push( [lat * precision, lng * precision] );
+		}
+		return array;
+	};
+
+	module.exports = L.Routing;
+})();
+
+},{}],12:[function(require,module,exports){
 (function (global){
 (function() {
 	'use strict';
