@@ -25,7 +25,7 @@ function trellisLayout(vspace, hspace, nodeSize) {
 
 // Returns color on grandient that matches to a given f in [0, 1]
 function computeColor(f) {
-  var start = [255, 0, 0],
+  var start = [255, 255, 255],
       end = [0, 255, 0],
       hex = '#',
       hexVal,
@@ -37,20 +37,7 @@ function computeColor(f) {
     }
     hex += hexVal;
   }
-}
-
-function highlightTransition(idx) {
-  var i = idx[0],
-      j = idx[1],
-      start, end;
-
-  if (i === selectedNode[0]) {
-    return;
-  }
-
-  start = idx[0] < selectedNode[0] ? idx : selectedNode,
-  end   = idx[0] > selectedNode[0] ? idx : selectedNode;
-  transitionInfo(transitions[i]);
+  return hex;
 }
 
 function highlightNode(idx) {
@@ -60,12 +47,17 @@ function highlightNode(idx) {
 
   var svg = d3.select("#trellis"),
       startIdx, endIdx;
+
+  // at most one marker can be compatible
   if (selectedNodes.length > 0) {
-    selectedNodes = selectedNodes.filter(function(n) { return isCompatible(n, idx); });
+    selectedNodes = selectedNodes.filter(function(n) {
+      var compat = isCompatible(n, idx);
+      if (!compat) restoreMarker(n, true);
+      return compat;
+    });
   }
 
   selectedNodes.push(idx);
-  if (selectedNodes.length > 2) selectedNodes.splice(0, 1);
 
   startIdx = selectedNodes[0];
   if (selectedNodes.length > 1) {
@@ -75,11 +67,20 @@ function highlightNode(idx) {
       endIdx = selectedNodes[0];
     }
   }
+  if (startIdx) highlightMarker(startIdx, true);
+  if (endIdx) highlightMarker(endIdx, true);
+
+  if (startIdx && endIdx) {
+    transitionInfo(transitions[endIdx[0]-1][startIdx[1]][endIdx[1]]);
+  }
 
   svg.selectAll(".edge")
     .style("display", function(d) {
-      var selected = ((d.startIdx[0] === startIdx[0] && d.startIdx[1] === startIdx[1]) ||
-                      (d.endIdx[0]   === startIdx[0] && d.endIdx[1]  === startIdx[1]));
+      var selected = false;
+      if (startIdx) {
+        selected = ((d.startIdx[0] === startIdx[0] && d.startIdx[1] === startIdx[1]) ||
+                   (d.endIdx[0]    === startIdx[0] && d.endIdx[1]  === startIdx[1]));
+      }
       if (endIdx) {
         selected = selected && ((d.startIdx[0] === endIdx[0] && d.startIdx[1] === endIdx[1]) ||
                                 (d.endIdx[0]   === endIdx[0] && d.endIdx[1]  === endIdx[1]));
@@ -87,23 +88,43 @@ function highlightNode(idx) {
 
       return selected ? 'inline' : 'none';
     });
+
   svg.selectAll(".node")
-    .style("fill", function(d) {
-      if ((d.idx[0] === startIdx[0] && d.idx[1] === startIdx[1]) ||
-          endIdx && (d.idx[0] === endIdx[0]   && d.idx[1] === endIdx[1])) {
-        return '#777';
+    .style("stroke-width", function(d) {
+      if (startIdx && (d.idx[0] === startIdx[0] && d.idx[1] === startIdx[1]) ||
+          endIdx   && (d.idx[0] === endIdx[0]   && d.idx[1] === endIdx[1])) {
+        return '2px';
       } else {
-        return computeColor(viterbi[d.idx[0]][d.idx[1]]);
+        return '1px';
       }
     });
+}
+
+function highlightMarker(idx, persistent) {
+  var m = candidate_markers[idx[0]][idx[1]];
+
+  m.persistent = m.persistent || persistent;
+
+  m.setStyle({radius: 12, fillOpacity: 0.9, stroke: true, weight: 1, color: '#000', opacity: 0.8});
+}
+function restoreMarker(idx, force) {
+  var m = candidate_markers[idx[0]][idx[1]];
+
+  if (m.persistent && !force) {
+    return;
+  } else if (force){
+    m.persistent = false;
+  }
+
+  m.setStyle({radius: 8, fillOpacity: 0.5, stroke: false});
 }
 
 function transitionInfo(p) {
   var probs = d3.select("#probs")
                  .html(function() {
-                   return '<b>Current state probability:</b> ' + p.stateProb + '<br>' +
-                          '<b>Emission probability :</b>' + p.emissionProb + '<br>' +
-                          '<b>Transition probability :</b>' + p.transitionProb + '<br>';
+                   return '<b>Current state probability:</b> ' + p[0] + '<br>' +
+                          '<b>Emission probability :</b>' + p[1] + '<br>' +
+                          '<b>Transition probability :</b>' + p[2] + '<br>';
                   });
 }
 
@@ -118,6 +139,7 @@ function printDiagramm(lists, transitions, viterbi) {
       .attr("id", "trellis")
       .attr("width", width)
       .attr("height", height),
+      maxViterbi = viterbi.map(function(col) { return Math.max.apply(null, col); }),
       nodes = lists.reduce(function(arr, l, i) {
         return arr.concat(l.map(function(v, j) {
           return {
@@ -125,7 +147,8 @@ function printDiagramm(lists, transitions, viterbi) {
             y: layout.getNodeY(i, j),
             idx: [i, j],
             coords: v[0],
-            probability: v[1]
+            probability: v[1],
+            color: computeColor(maxViterbi[i] > 0 ? viterbi[i][j] / maxViterbi[i] : 0)
           };
         }));
       }, []),
@@ -151,7 +174,8 @@ function printDiagramm(lists, transitions, viterbi) {
           merged = [].concat.apply([], results);
         return arr.concat(merged);
       }, []);
-  svg.selectAll('.edge').data(edges)
+
+  svg.append("g").selectAll('.edge').data(edges)
       .enter().append("line")
       .attr("class", "edge")
       .style("stroke-width", function(d) {return (0.1 + 2*d.normalizedWeight) + 'px'; })
@@ -160,19 +184,23 @@ function printDiagramm(lists, transitions, viterbi) {
       .attr("x2", function(d) {return d.x2;})
       .attr("y2", function(d) {return d.y2;});
   svg.selectAll('.node').data(nodes)
-      .enter().append("circle")
-      .attr("class", "node")
+      .enter().append("g").attr("class", "node")
+      .on('click', function(d) { highlightNode(d.idx); })
+      .on('mouseenter', function(d) { highlightMarker(d.idx); })
+      .on('mouseleave', function(d) { restoreMarker(d.idx); });
+  svg.selectAll('.node')
+      .append("circle")
+      .attr("class", "body")
       .attr("r", layout.getNodeSize())
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; })
-      .on('click', function(d) {highlightNode(d.idx);});
-  svg.selectAll('.label').data(nodes)
-      .enter().append("text")
+      .style("fill", function (d) { return d.color; });
+  svg.selectAll('.node')
+      .append("text")
       .attr("class", "label")
       .attr('x', function(d) { return layout.getLabelX.apply(null, d.idx); })
       .attr('y', function(d) { return layout.getLabelY.apply(null, d.idx); })
-      .text(function(d) {return d.idx[1]; })
-      .on('click', function(d) {highlightNode(d.idx);});
+      .text(function(d) {return d.idx[1]; });
 }
 
 var color_table = [

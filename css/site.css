@@ -17,21 +17,18 @@
     overflow-y: scroll;
 }
 
-.node {
+.node .body{
   fill: #fff;
   stroke: #000;
   opacity: 1.0;
   border: 1px solid #000;
 }
 
-.node:hover {
-  fill: #ddd;
-}
-
-.label {
+.node .label {
   font-size: 10px;
   font-family: sans-serif;
   fill: #000;
+  cursor: default;
 }
 
 #probs {
