@@ -11,7 +11,8 @@ var candidates_list = [],
     transitions = [],
     viterbi = [],
     candidate_markers = [],
-    selectedNodes = [];
+    selectedNodes = [],
+    candidateLayer;
 
 function trellisLayout(vspace, hspace, nodeSize) {
   return {
@@ -124,7 +125,8 @@ function transitionInfo(p) {
                  .html(function() {
                    return '<b>Current state probability:</b> ' + p[0] + '<br>' +
                           '<b>Emission probability :</b>' + p[1] + '<br>' +
-                          '<b>Transition probability :</b>' + p[2] + '<br>';
+                          '<b>Transition probability :</b>' + p[2] + '<br>' +
+                          '<b>Distance difference :</b>' + p[3] + '<br>';
                   });
 }
 
@@ -245,7 +247,8 @@ var lrm = L.Routing.control({
         var marker = L.marker(wp.latLng, {
           icon: L.mapbox.marker.icon({
             'marker-color': color_table[i % color_table.length]
-          })
+          }),
+          draggable: true,
         });
         return marker;
       }
@@ -259,10 +262,20 @@ function routingShim(response, inputWaypoints, callback, context) {
   transitions = response.debug.transitions;
   viterbi = response.debug.viterbi;
 
+  d3.selectAll("#trellis").remove();
+  d3.selectAll("#beta").remove();
+  d3.selectAll("#probs").remove();
+
+  d3.select("#info").append("div").attr("id", "beta").text("Beta:" + response.debug.beta);
+
   printDiagramm(candidates_list, transitions, viterbi);
 
-  var candidateLayer = L.featureGroup().addTo(map),
-      i;
+  if (!candidateLayer) candidateLayer = L.featureGroup().addTo(map);
+  else candidateLayer.clearLayers();
+
+  if (candidate_markers.length > 0) candidate_markers = [];
+
+  var i;
   for (i = 0; i < candidates_list.length; i++) {
       markers = addCandidates(candidateLayer, candidates_list[i], darkened_color_table[i % color_table.length]);
       candidate_markers.push(markers);
