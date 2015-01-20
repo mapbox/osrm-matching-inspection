@@ -60,3 +60,7 @@
   stroke: #000;
 }
 
+.leaflet-routing-container {
+  display: none;
+}
+

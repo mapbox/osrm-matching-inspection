@@ -20,5 +20,5 @@ input_directory = sys.argv[1]
 output_file = sys.argv[2]
 
 with open(output_file, "w+") as f:
-    f.write(str(get_gpx_files(input_directory)))
+    f.write("var gpx_files = " + str(get_gpx_files(input_directory)) + ";")
 

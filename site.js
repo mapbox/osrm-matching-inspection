@@ -1,9 +1,3 @@
-L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
-var map = L.mapbox.map('map', 'themarex.kel82add');
-
-var test_points = [[-104.678430325, 39.8402230768], [-104.678441892, 39.8389490275], [-104.678501319, 39.8384597758], [-104.678864759, 39.8380486854], [-104.679562887, 39.8379289918], [-104.67980898, 39.8379328056], [-104.680118859, 39.8379402655], [-104.680458577, 39.8379774392], [-104.680873565, 39.8379780678], [-104.681298779, 39.8381384556], [-104.682217185, 39.8382390803], [-104.683151851, 39.8379724939], [-104.684411483, 39.8379439535], [-104.685109528, 39.8379617231], [-104.685755354, 39.8379832646], [-104.686448956, 39.8379757209], [-104.687785702, 39.8380496074], [-104.689317746, 39.8380320054], [-104.69090662, 39.8380549299], [-104.691668702, 39.83801784], [-104.692244707, 39.8380088713], [-104.692609236, 39.8379971367], [-104.692684338, 39.8379975977], [-104.692930095, 39.8375566677], [-104.692954905, 39.8370380374], [-104.692967478, 39.8364751507], [-104.692983236, 39.8353401572], [-104.693052471, 39.8349234509], [-104.693834502, 39.8347067368], [-104.694528356, 39.8347132747], [-104.69632485, 39.834510223], [-104.69858679, 39.8343721731], [-104.701106725, 39.8343324429], [-104.703825396, 39.8343223008], [-104.706578516, 39.8343627435], [-104.707955076, 39.8343728017], [-104.710717499, 39.8343978636], [-104.712087102, 39.8343984923], [-104.713447485, 39.8343979055], [-104.714782303, 39.8343917448], [-104.716148051, 39.8344160105], [-104.71753249, 39.8344190698], [-104.718902847, 39.8344359175], [-104.720322322, 39.8344844487], [-104.721726794, 39.8344529746], [-104.723147024, 39.8344437965], [-104.726039535, 39.8344578781], [-104.728824003, 39.8344714148], [-104.730166448, 39.834508379], [-104.731463967, 39.8345035175], [-104.732772382, 39.8345106421], [-104.735264825, 39.8345276993], [-104.73780429, 39.8345596763], [-104.740478452, 39.8345693993], [-104.741831627, 39.8345535156], [-104.743197877, 39.8345594248], [-104.744586507, 39.8345390568], [-104.747482035, 39.8345377995], [-104.748935877, 39.834557497], [-104.751811707, 39.8345945031], [-104.753268734, 39.834595467], [-104.754712852, 39.8345769849], [-104.756173315, 39.8345904379], [-104.757618522, 39.8345968081], [-104.759073285, 39.8345978978], [-104.761973843, 39.8346298328], [-104.763426427, 39.8346442916], [-104.764909437, 39.8346675514], [-104.766377863, 39.8346767715], [-104.767840337, 39.8346412322], [-104.769281438, 39.8345336086], [-104.772149474, 39.8340699636], [-104.773556795, 39.8337102542], [-104.77492162, 39.8332871776], [-104.777473239, 39.8322452233], [-104.778673695, 39.831635356], [-104.779802654, 39.8309582239], [-104.781843396, 39.8294176301], [-104.782791222, 39.8285762547], [-104.783642404, 39.8276586039], [-104.78440172, 39.8266783404], [-104.785120133, 39.825661867], [-104.785725726, 39.824641035], [-104.786607754, 39.8225602694], [-104.786897348, 39.8214528105], [-104.787143776, 39.8203560384], [-104.787271852, 39.8192298878], [-104.787291382, 39.8181088083], [-104.787254585, 39.8159520608], [-104.787251065, 39.8148631677], [-104.787285263, 39.8137720116], [-104.787256345, 39.8115637154], [-104.787240336, 39.8104571365], [-104.787232038, 39.8093764997], [-104.787246287, 39.808266568]]
-  .map(function(d) {return L.latLng(d[1], d[0]);});
-
 var candidates_list = [],
     transitions = [],
     viterbi = [],
@@ -11,7 +5,15 @@ var candidates_list = [],
     selectedNodes = [],
     chosen_candidates = [],
     breakage = [],
+    current_file_idx = 0,
     candidateLayer;
+
+function geojsonToCoordinates(geojson) {
+  if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
+    return geojson.features[0].geometry.coordinates.map(function(d) {return L.latLng(d[1], d[0]);});
+  }
+  return [];
+}
 
 function trellisLayout(vspace, hspace, nodeSize) {
   return {
@@ -254,21 +256,6 @@ function addCandidates(layer, candidates, color) {
   return markers;
 }
 
-var lrm = L.Routing.control({
-      serviceUrl: '//127.0.0.1:5000/match',
-      routeWhileDragging: true,
-      createMarker: function(i, wp, n) {
-        var marker = L.marker(wp.latLng, {
-          icon: L.mapbox.marker.icon({
-            'marker-color': color_table[i % color_table.length]
-          }),
-          draggable: true,
-        });
-        return marker;
-      }
-    }).addTo(map),
-    router = lrm.getRouter(),
-    routeDoneFunc = router._routeDone;
 
 
 function routingShim(response, inputWaypoints, callback, context) {
@@ -278,7 +265,6 @@ function routingShim(response, inputWaypoints, callback, context) {
   viterbi = response.debug.viterbi;
   pruned = response.debug.pruned;
   chosen_candidates = response.debug.chosen_candidates;
-  console.log(chosen_candidates);
 
   d3.selectAll("#trellis").remove();
 
@@ -298,8 +284,58 @@ function routingShim(response, inputWaypoints, callback, context) {
   routeDoneFunc.call(router, response, inputWaypoints, callback, context);
 }
 
+function getURLParam(name) {
+  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+  if (results) return results[1] || null;
+  return null;
+}
+
+function showMatching(i) {
+  var file = gpx_files[i];
+  window.document.title = "Matching (" + (i+1) + " / " + gpx_files.length + "): " + file;
+
+  $.ajax(file).done(function(xml) {
+    var geojson = toGeoJSON.gpx(xml),
+        coordinates = geojsonToCoordinates(geojson);
+
+    lrm.setWaypoints(coordinates);
+    current_file_idx = i;
+  });
+}
+
+function showNextMatching() { showMatching(current_file_idx+1); }
+function showPrevMatching() { showMatching(current_file_idx-1); }
+
+L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
+var map = L.mapbox.map('map', 'themarex.kel82add'),
+    lrm = L.Routing.control({
+      position: 'bottomright',
+      serviceUrl: '//127.0.0.1:5000/match',
+      routeWhileDragging: true,
+      createMarker: function(i, wp, n) {
+        var marker = L.marker(wp.latLng, {
+          icon: L.mapbox.marker.icon({
+            'marker-color': color_table[i % color_table.length]
+          }),
+          draggable: true,
+        });
+        return marker;
+      }
+    }).addTo(map),
+    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']}),
+    router = lrm.getRouter(),
+    routeDoneFunc = router._routeDone;
+
+
+edit.addTo(map);
 router._routeDone = routingShim;
 
-lrm.setWaypoints(test_points);
+showMatching(parseInt(getURLParam('n')-1) || 0);
+
+$('body').on('keydown', function(e) {
+  if (e.which === 39) showNextMatching();
+  if (e.which === 37) showPrevMatching();
+});
+
 
 
