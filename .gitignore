@@ -1,4 +1,5 @@
 *.swp
-*.json
+files.json
 data
+dist
 

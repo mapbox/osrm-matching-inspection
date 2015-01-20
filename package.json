@@ -1,0 +1,18 @@
+{
+  "name": "",
+  "version": "0.0.1",
+  "description": "Matching debugging gui",
+  "main": "src/matching.js",
+  "scripts": {
+    "test": "jshint src",
+    "build": "browserify -d src/matching.js -s osrm.matching > dist/osrm.matching.js",
+    "prepublish": "npm run build"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "browserify": "2",
+    "jshint": "2"
+  },
+  "license": "BSD-2-Clause"
+}
