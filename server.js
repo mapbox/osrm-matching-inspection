@@ -34,14 +34,53 @@ app.get('/classes', function(req, res) {
   res.send(JSON.stringify(reply));
 });
 
-app.get('/traces/:cls', function(req, res) {
+function handleTrace(selectedCls, selectedId) {
+  var selector = { cls: classes[selectedCls]},
+      reply = { status: "ok" },
+      records;
+
+  if (selectedId !== undefined) selector.id = selectedId;
+
+  records = db(DB_NAME).where(selector).first(1).value();
+
+  if (records.length > 0) {
+    reply.trace = {
+      id: records[0].id,
+      file: records[0].file
+    };
+  }
+
+  return JSON.stringify(reply);
+}
+
+app.get('/trace/:cls/:id', function(req, res) {
   var selectedCls = req.params.cls,
-      records = db(DB_NAME).where({cls: classes[selectedCls]}).value(),
-      reply = {
-        status: "ok",
-        files: records.map(function(i) {return i.file;}),
-      };
-  res.send(JSON.stringify(reply));
+      selectedId = parseInt(req.params.id);
+
+  res.send(handleTrace(selectedCls, selectedId));
+});
+
+app.get('/trace/:cls/:id/next', function(req, res) {
+  var selectedCls = req.params.cls,
+      selectedId = parseInt(req.params.id),
+      // FIXME this is a hack and does not scale
+      records = db(DB_NAME).where({cls: classes[selectedCls]}).sortBy('id').value(),
+      i;
+
+  for (i = 0; i < records.length; i++) {
+    if (records[i].id > selectedId) {
+      res.send(handleTrace(selectedCls, records[i].id));
+      return;
+    }
+  }
+
+  res.send(JSON.stringify({status: "ok"}));
+});
+
+app.get('/trace/:cls', function(req, res) {
+  var selectedCls = req.params.cls;
+
+  res.send(handleTrace(selectedCls));
 });
 
 app.get('/classify/:id/:cls', function(req, res) {
@@ -49,7 +88,7 @@ app.get('/classify/:id/:cls', function(req, res) {
       clsName = req.params.cls;
 
   db(DB_NAME)
-    .find({file: id})
+    .find({id: id})
     .assign({cls: classes[clsName]});
 
   res.send('{status: "ok"}');

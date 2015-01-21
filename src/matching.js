@@ -1,16 +1,8 @@
 var trellis = require('./diagram.js'),
     candidates = require('./candidates.js'),
     colors = require('./colors.js'),
-    gpx_files = [];
-
-function updateFileList(n) {
-  $.getJSON('http://127.0.0.1:8337/traces/unknown', function(data) {
-    gpx_files = data.files;
-    showMatching(n || 0);
-  });
-}
-
-var current_file_idx = 0;
+    trace = {},
+    history = [];
 
 function geojsonToCoordinates(geojson) {
   if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
@@ -41,24 +33,35 @@ function getURLParam(name) {
   return null;
 }
 
-function showMatching(i) {
-  if (i >= gpx_files.length) return;
+function showMatching(id, next) {
+  var url = 'http://127.0.0.1:8337/trace/unknown';
+  if (id !== undefined) url += '/' + id;
+  if (next !== undefined) url += '/next';
 
-  var file = gpx_files[i];
-  window.document.title = "Matching (" + (i+1) + " / " + gpx_files.length + "): " + file;
+  $.getJSON(url, function(data) {
+    trace = data.trace;
 
-  $.ajax(file).done(function(xml) {
-    var geojson = toGeoJSON.gpx(xml),
-        coordinates = geojsonToCoordinates(geojson);
+    history.push(trace.id);
 
-    lrm.setWaypoints(coordinates);
-    current_file_idx = i;
+    window.document.title = "Matching (" + trace.id + "): " + trace.file;
+
+    $.ajax(trace.file).done(function(xml) {
+      var geojson = toGeoJSON.gpx(xml),
+          coordinates = geojsonToCoordinates(geojson);
+
+      lrm.setWaypoints(coordinates);
+    });
   });
 }
 
-function showNextMatching() { showMatching(current_file_idx+1); }
-function showPrevMatching() { showMatching(current_file_idx-1); }
-
+function showNextMatching() { if (history.length > 0) showMatching(history[history.length-1], true); }
+function showPrevMatching() {
+  if (history.length > 1) {
+    showMatching(history[history.length-2]);
+    history.pop();
+    history.pop();
+  }
+}
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
 var map = L.mapbox.map('map', 'themarex.kel82add'),
@@ -85,8 +88,8 @@ edit.addTo(map);
 router._routeDone = routingShim;
 
 
-var n = parseInt(getURLParam('n')) - 1;
-updateFileList(n > 0 && n || 0);
+var id = getURLParam('id');
+showMatching(parseInt(id) || undefined);
 
 $('body').on('keydown', function(e) {
   if (e.which === 39) showNextMatching();
