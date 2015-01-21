@@ -1,5 +1,6 @@
 *.swp
 files.json
+labels.json
 data
 dist
 node_modules

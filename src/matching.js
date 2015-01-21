@@ -1,7 +1,14 @@
 var trellis = require('./diagram.js'),
     candidates = require('./candidates.js'),
     colors = require('./colors.js'),
-    gpx_files = $.getJSON('http://127.0.0.1:8337/list');
+    gpx_files = [];
+
+function updateFileList(n) {
+  $.getJSON('http://127.0.0.1:8337/traces/unknown', function(data) {
+    gpx_files = data.files;
+    showMatching(n || 0);
+  });
+}
 
 var current_file_idx = 0;
 
@@ -35,6 +42,8 @@ function getURLParam(name) {
 }
 
 function showMatching(i) {
+  if (i >= gpx_files.length) return;
+
   var file = gpx_files[i];
   window.document.title = "Matching (" + (i+1) + " / " + gpx_files.length + "): " + file;
 
@@ -49,6 +58,7 @@ function showMatching(i) {
 
 function showNextMatching() { showMatching(current_file_idx+1); }
 function showPrevMatching() { showMatching(current_file_idx-1); }
+
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
 var map = L.mapbox.map('map', 'themarex.kel82add'),
@@ -74,7 +84,9 @@ var map = L.mapbox.map('map', 'themarex.kel82add'),
 edit.addTo(map);
 router._routeDone = routingShim;
 
-showMatching(parseInt(getURLParam('n')-1) || 0);
+
+var n = parseInt(getURLParam('n')) - 1;
+updateFileList(n > 0 && n || 0);
 
 $('body').on('keydown', function(e) {
   if (e.which === 39) showNextMatching();
