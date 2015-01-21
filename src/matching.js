@@ -1,6 +1,7 @@
 var trellis = require('./diagram.js'),
     candidates = require('./candidates.js'),
-    colors = require('./colors.js');
+    colors = require('./colors.js'),
+    gpx_files = $.getJSON('http://127.0.0.1:8337/list');
 
 var current_file_idx = 0;
 

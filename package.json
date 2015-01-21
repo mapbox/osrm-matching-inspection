@@ -9,6 +9,9 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
+    "express": "4.11.0",
+    "lowdb": "0.6.1",
+    "recursive-search": "1.0.1"
   },
   "devDependencies": {
     "browserify": "2",
