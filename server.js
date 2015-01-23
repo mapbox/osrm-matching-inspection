@@ -21,7 +21,7 @@ function importDirectory(directory) {
     var files = rs.recursiveSearchSync(/.gpx$/, directory),
         inmemoryDB = low(),
         table = inmemoryDB(DB_NAME);
-    console.log("Adding to database...");
+    console.log("Adding " + files.length + " files to database...");
     files.map(function(f, i) {table.push({id: i, file: f, cls: classes.unknown});});
     inmemoryDB.save(DB_FILE);
 }
@@ -87,11 +87,13 @@ app.get('/classify/:id/:cls', function(req, res) {
   var id = parseInt(req.params.id),
       clsName = req.params.cls;
 
+  console.log(id + " classified as " + clsName);
+
   db(DB_NAME)
     .find({id: id})
     .assign({cls: classes[clsName]});
 
-  res.send('{status: "ok"}');
+  res.send(JSON.stringify({status: "ok"}));
 });
 
 if (process.argv.length > 2) {

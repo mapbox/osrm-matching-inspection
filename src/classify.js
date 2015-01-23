@@ -87,13 +87,16 @@ showMatching(parseInt(id) || undefined);
 $('body').on('keydown', function(e) {
   if (e.which === 39) showNextMatching();
   if (e.which === 37) showPrevMatching();
+
+  var clsIdx = e.which - 48;
+  if (clsIdx >= 0 && clsIdx < classes.length) classifyCurrentTrace(classes[clsIdx]);
 });
 
 function classifyCurrentTrace(cls) {
   if (history.length === 0) return;
 
   var url = 'http://127.0.0.1:8337/classify/' + history[history.length-1] + '/' + cls;
-  $.getJSON(url);
+  $.getJSON(url, showNextMatching);
 }
 
 $.getJSON('http://127.0.0.1:8337/classes', function(data) {
