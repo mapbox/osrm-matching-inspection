@@ -23,7 +23,7 @@ function importDirectory(directory) {
         table = inmemoryDB(DB_NAME);
     console.log("Adding " + files.length + " files to database...");
     files.map(function(f, i) {table.push({id: i, file: f, cls: classes.unknown});});
-    inmemoryDB.save(DB_FILE);
+    inmemoryDB.saveSync(DB_FILE);
 }
 
 app.get('/classes', function(req, res) {
