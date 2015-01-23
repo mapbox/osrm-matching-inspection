@@ -5,7 +5,7 @@
   "main": "src/matching.js",
   "scripts": {
     "test": "jshint src",
-    "build": "browserify -d src/matching.js -s osrm.matching > dist/osrm.matching.js",
+    "build": "browserify -d src/matching.js -s osrm.matching > dist/osrm.matching.js && browserify -d src/classify.js -s osrm.classify > dist/osrm.classify.js",
     "prepublish": "npm run build"
   },
   "dependencies": {

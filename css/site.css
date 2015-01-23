@@ -40,6 +40,20 @@
   left: 45px;
 }
 
+.classify {
+  margin: 20px 5px 20px 5px;
+  position: static;
+}
+
+#classes {
+  width: 400px;
+  height: 60px;
+  position: absolute;
+  top: 5px;
+  left: 40%;
+}
+
+
 #info {
   position: absolute;
   left: 5px;

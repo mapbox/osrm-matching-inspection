@@ -1,7 +1,7 @@
-var trellis = require('./diagram.js'),
-    candidates = require('./candidates.js'),
-    colors = require('./colors.js'),
-    trace = {},
+var colors = require('./colors.js');
+
+var trace = {},
+    traceLine,
     history = [];
 
 function geojsonToCoordinates(geojson) {
@@ -12,17 +12,12 @@ function geojsonToCoordinates(geojson) {
 }
 
 function routingShim(response, inputWaypoints, callback, context) {
-  var candidatesList = response.debug.expanded_candidates,
-      transitions = response.debug.transitions;
-      breakage = response.debug.breakage;
-      viterbi = response.debug.viterbi;
-      pruned = response.debug.pruned;
-      chosenCandidates = response.debug.chosen_candidates;
 
-  d3.selectAll("#trellis").remove();
+  if (traceLine) map.removeLayer(traceLine);
 
-  trellis.buildDiagramm(candidatesList, transitions, viterbi, breakage, pruned, chosenCandidates);
-  candidates.buildCandiateMarkers(map, candidatesList);
+  var wps = inputWaypoints.map(function(wp) { return wp.latLng; });
+
+  traceLine = L.polyline(wps, {color: 'green', opacityi: 0.5}).addTo(map);
 
   routeDoneFunc.call(router, response, inputWaypoints, callback, context);
 }
@@ -43,7 +38,7 @@ function showMatching(id, next) {
 
     history.push(trace.id);
 
-    window.document.title = "Matching (" + trace.id + "): " + trace.file;
+    window.document.title = "Classify (" + trace.id + "): " + trace.file;
 
     $.ajax(trace.file).done(function(xml) {
       var geojson = toGeoJSON.gpx(xml),
@@ -70,22 +65,21 @@ var map = L.mapbox.map('map', 'themarex.kel82add'),
       serviceUrl: '//127.0.0.1:5000/match',
       routeWhileDragging: true,
       createMarker: function(i, wp, n) {
-        var marker = L.marker(wp.latLng, {
-          icon: L.mapbox.marker.icon({
-            'marker-color': colors.normal[i % colors.normal.length]
-          }),
-          draggable: true,
-        });
+        var marker = L.circleMarker(wp.latLng, {stroke: false,
+                                                fill: true,
+                                                fillColor: colors.normal[i % colors.normal.length],
+                                                radius: 10,
+                                                fillOpacity: 0.5,
+                                                draggable: true});
         return marker;
       }
     }).addTo(map),
-    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']}),
     router = lrm.getRouter(),
     routeDoneFunc = router._routeDone;
 
 
-edit.addTo(map);
 router._routeDone = routingShim;
+
 
 var id = getURLParam('id');
 showMatching(parseInt(id) || undefined);
@@ -95,3 +89,23 @@ $('body').on('keydown', function(e) {
   if (e.which === 37) showPrevMatching();
 });
 
+function classifyCurrentTrace(cls) {
+  if (history.length === 0) return;
+
+  var url = 'http://127.0.0.1:8337/classify/' + history[history.length-1] + '/' + cls;
+  $.getJSON(url);
+}
+
+$.getJSON('http://127.0.0.1:8337/classes', function(data) {
+  classes = data.classes;
+
+  d3.select('#classes').selectAll('.classify')
+    .data(classes).enter()
+    .append('div')
+    .attr('class', '.classify')
+    .append('a')
+    .attr('href', '#')
+    .html(function(d, i) { return '(' + i + '): ' + d; })
+    .on('click', classifyCurrentTrace);
+
+});
