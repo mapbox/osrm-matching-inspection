@@ -21,6 +21,8 @@ function routingShim(response, inputWaypoints, callback, context) {
 
   d3.selectAll("#trellis").remove();
 
+  window.document.title = response.confidence + " -> " + window.document.title;
+
   trellis.buildDiagramm(candidatesList, transitions, viterbi, breakage, pruned, chosenCandidates);
   candidates.buildCandiateMarkers(map, candidatesList);
 
