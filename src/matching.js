@@ -68,6 +68,11 @@ function showPrevMatching() {
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
 var map = L.mapbox.map('map', 'themarex.kel82add'),
     lrm = L.Routing.control({
+      lineOptions: {
+        styles: [
+          {color: 'blue', opacity: 0.5, weight: 6},
+        ],
+      },
       position: 'bottomright',
       serviceUrl: '//127.0.0.1:5000/match',
       routeWhileDragging: true,
