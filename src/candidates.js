@@ -32,7 +32,7 @@ function addCandidates(layer, candidates, color) {
 
   for (idx = 0; idx < candidates.length; idx++)
   {
-    c = L.latLng(candidates[idx]);
+    c = L.latLng(candidates[idx].coordinate);
     m = L.circleMarker(c, {stroke: false, fill: true, fillColor: color, radius: size, fillOpacity: 0.5});
     layer.addLayer(m);
     markers.push(m);

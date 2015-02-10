@@ -12,19 +12,15 @@ function geojsonToCoordinates(geojson) {
 }
 
 function routingShim(response, inputWaypoints, callback, context) {
-  var candidatesList = response.debug.expanded_candidates,
-      transitions = response.debug.transitions;
+  var states = response.debug.states,
       breakage = response.debug.breakage;
-      viterbi = response.debug.viterbi;
-      pruned = response.debug.pruned;
-      chosenCandidates = response.debug.chosen_candidates;
 
   d3.selectAll("#trellis").remove();
 
   window.document.title = response.confidence + " -> " + window.document.title;
 
-  trellis.buildDiagramm(candidatesList, transitions, viterbi, breakage, pruned, chosenCandidates);
-  candidates.buildCandiateMarkers(map, candidatesList);
+  trellis.buildDiagramm(states, breakage);
+  candidates.buildCandiateMarkers(map, states);
 
   routeDoneFunc.call(router, response, inputWaypoints, callback, context);
 }
