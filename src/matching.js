@@ -1,28 +1,31 @@
-var trellis = require('./diagram.js'),
-    candidates = require('./candidates.js'),
+var OSRM = require('osrm-client'),
+    trellis = require('./diagram.js'),
     colors = require('./colors.js'),
+    utils = require('./utils.js'),
+    matchingLayer = utils.debugMatchingLayer(),
+    osrm = new OSRM('//127.0.0.1:5000'),
     trace = {},
     history = [];
 
 function geojsonToCoordinates(geojson) {
   if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
-    return geojson.features[0].geometry.coordinates.map(function(d) {return L.latLng(d[1], d[0]);});
+    return geojson.features[0].geometry.coordinates.map(function(d) {return [d[1], d[0]];});
   }
   return [];
 }
 
-function routingShim(response, inputWaypoints, callback, context) {
+function onMatched(err, response) {
+  if (err) return;
+
   var states = response.debug.states,
-      breakage = response.debug.breakage;
+      breakage = response.debug.breakage,
+      traces = response.traces;
 
   d3.selectAll("#trellis").remove();
 
-  window.document.title = response.confidence + " -> " + window.document.title;
-
   trellis.buildDiagramm(states, breakage);
-  candidates.buildCandiateMarkers(map, states);
-
-  routeDoneFunc.call(router, response, inputWaypoints, callback, context);
+  matchingLayer.update(states, traces);
+  map.fitBounds(matchingLayer.getBounds());
 }
 
 function getURLParam(name) {
@@ -47,7 +50,7 @@ function showMatching(id, next) {
       var geojson = toGeoJSON.gpx(xml),
           coordinates = geojsonToCoordinates(geojson);
 
-      lrm.setWaypoints(coordinates);
+      osrm.match(coordinates, onMatched);
     });
   });
 }
@@ -63,32 +66,10 @@ function showPrevMatching() {
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
 var map = L.mapbox.map('map', 'themarex.kel82add'),
-    lrm = L.Routing.control({
-      lineOptions: {
-        styles: [
-          {color: 'blue', opacity: 0.5, weight: 6},
-        ],
-      },
-      position: 'bottomright',
-      serviceUrl: '//127.0.0.1:5000/match',
-      routeWhileDragging: true,
-      createMarker: function(i, wp, n) {
-        var marker = L.marker(wp.latLng, {
-          icon: L.mapbox.marker.icon({
-            'marker-color': colors.normal[i % colors.normal.length]
-          }),
-          draggable: true,
-        });
-        return marker;
-      }
-    }).addTo(map),
-    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']}),
-    router = lrm.getRouter(),
-    routeDoneFunc = router._routeDone;
+    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']});
 
-
+matchingLayer.addTo(map);
 edit.addTo(map);
-router._routeDone = routingShim;
 
 var id = getURLParam('id');
 showMatching(parseInt(id) || undefined);

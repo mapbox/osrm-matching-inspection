@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <title>OSRM matching example</title>
-    <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.css' rel='stylesheet' />
-    <link rel="stylesheet" href="css/leaflet-routing-machine.css" />
-    <link rel="stylesheet" href="css/leaflet.editinosm.css" />
+    <link rel='stylesheet' href='node_modules/mapbox.js/dist/mapbox.standalone.css'/>
+    <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="node_modules/leaflet-editinosm/Leaflet.EditInOSM.css" />
     <link rel="stylesheet" href="css/site.css" />
 </head>
 <body>
@@ -13,11 +13,10 @@
     <div id="probs" class="info"></div>
     <div id="info" class="info"></div>
     <script src="js/d3.js"></script>
-    <script src='js/mapbox.js'></script>
     <script src='js/jquery.js'></script>
     <script src='js/togeojson.js'></script>
-    <script src="js/leaflet-routing-machine.js"></script>
-    <script src="js/leaflet.editinosm.js"></script>
+    <script src='./node_modules/mapbox.js/dist/mapbox.uncompressed.js'></script>
+    <script src="./node_modules/leaflet-editinosm/Leaflet.EditInOSM.js"></script>
     <script src="dist/osrm.matching.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+require('mapbox.js');
 var colors = require('./colors.js');
 
 var trace = {},

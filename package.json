@@ -9,13 +9,18 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "express": "^4.11.0",
-    "lowdb": "^0.6.1",
-    "request": "^2.53.0",
     "async": "^0.9.0",
+    "express": "^4.11.0",
     "jsdom": "^3.1.1",
+    "lowdb": "^0.6.1",
+    "leaflet": "^0.7.3",
+    "mapbox.js": "^2.1.5",
+    "osrm-client": "^0.0.2",
+    "polyline": "^0.0.3",
+    "recursive-search": "^1.0.1",
+    "request": "^2.53.0",
     "xmldom": "^0.1.19",
-    "recursive-search": "^1.0.1"
+    "leaflet-editinosm": "^0.2.1"
   },
   "devDependencies": {
     "browserify": "2",

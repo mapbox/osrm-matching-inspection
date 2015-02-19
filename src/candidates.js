@@ -1,7 +1,8 @@
 var colors = require('./colors.js');
 
 var candidateMarkers = [],
-    candidateLayer;
+    candidateLayer,
+    traceLayer;
 
 function highlightMarker(idx, persistent) {
   var m = candidateMarkers[idx[0]][idx[1]];
@@ -41,11 +42,29 @@ function addCandidates(layer, candidates, color) {
   return markers;
 }
 
+function buildTraceMarkers(map, coords) {
+  if (!traceLayer) traceLayer = L.featureGroup().addTo(map);
+  else traceLayer.clearLayers();
+
+  if (traceMarkers.length > 0) traceMarkers = [];
+
+  coords.map(function (latLng) {
+    var m = L.marker(latLng, {
+      icon: L.mapbox.marker.icon({
+        'marker-color': colors.normal[i % colors.normal.length]
+      }),
+      draggable: false,
+    });
+    m.addTo(traceLayer);
+  });
+}
+
 function buildCandiateMarkers(map, list) {
   if (!candidateLayer) candidateLayer = L.featureGroup().addTo(map);
   else candidateLayer.clearLayers();
 
   if (candidateMarkers.length > 0) candidateMarkers = [];
+
 
   var i;
   for (i = 0; i < list.length; i++) {
@@ -58,4 +77,5 @@ module.exports = {
   highlightMarker: highlightMarker,
   restoreMarker: restoreMarker,
   buildCandiateMarkers: buildCandiateMarkers,
+  buildTraceMarkers: buildTraceMarkers,
 };
