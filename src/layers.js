@@ -67,6 +67,26 @@ var DebugMatchingLayer = MatchingLayer.extend({
     }.bind(this));
   },
 
+  highlightCandidate: function(idx, persistent) {
+    var m = this._candidateGroups.getLayers()[idx[0]].getLayers()[idx[1]];
+
+    m.persistent = m.persistent || persistent;
+
+    m.setStyle({radius: 12, fillOpacity: 0.9, stroke: true, weight: 1, color: '#000', opacity: 0.8});
+  },
+
+  restoreCandidate: function(idx, force) {
+    var m = this._candidateGroups.getLayers()[idx[0]].getLayers()[idx[1]];
+
+    if (m.persistent && !force) {
+      return;
+    } else if (force){
+      m.persistent = false;
+    }
+
+    m.setStyle({radius: 8, fillOpacity: 0.5, stroke: false});
+  },
+
   _addTraceMarkers: function (inputCoordinates, trace) {
     var group = this._traceGroup;
 

@@ -1,17 +1,30 @@
 var OSRM = require('osrm-client'),
-    trellis = require('./diagram.js'),
+    diagram = require('./diagram.js'),
     colors = require('./colors.js'),
-    utils = require('./utils.js'),
-    matchingLayer = utils.debugMatchingLayer(),
+    layers = require('./layers.js'),
+    matchingLayer = layers.debugMatchingLayer(),
     osrm = new OSRM('//127.0.0.1:5000'),
     trace = {},
-    history = [];
+    history = [],
+    trellis;
 
 function geojsonToCoordinates(geojson) {
   if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
     return geojson.features[0].geometry.coordinates.map(function(d) {return [d[1], d[0]];});
   }
   return [];
+}
+
+function updateTransitionInfo(p) {
+  var probs = d3.select("#probs")
+                 .html(function() {
+                   return '<b>Previous state probability:</b> ' + p[0] + '<br>' +
+                          '<b>Emission probability :</b>' + p[1] + '<br>' +
+                          '<b>Transition probability :</b>' + p[2] + '<br>' +
+                          '<b>Total :</b>' + (p[0] + p[1] + p[2]) + '<br>' +
+                          '<b>Network distance :</b>' + p[3] + '<br>' +
+                          '<b>Euclid distance :</b>' + p[4] + '<br>';
+                  });
 }
 
 function onMatched(coordinates, err, response) {
@@ -23,7 +36,8 @@ function onMatched(coordinates, err, response) {
 
   d3.selectAll("#trellis").remove();
 
-  trellis.buildDiagramm(states, breakage);
+  trellis = diagram.trellis(d3.select("#info"), matchingLayer, states, breakage);
+  trellis.on('transitionselected', updateTransitionInfo);
   matchingLayer.update(coordinates, states, traces);
   map.fitBounds(matchingLayer.getBounds());
 }
