@@ -55,21 +55,23 @@ var DebugMatchingLayer = MatchingLayer.extend({
     this._traceGroup = L.layerGroup();
   },
 
-  update: function(states, subtraces) {
+  update: function(inputCoordinates, states, subtraces) {
     MatchingLayer.prototype.update.call(this, subtraces);
 
-    subtraces.map(this._addTraceMarkers.bind(this));
+    this._traceGroup.clearLayers();
+    subtraces.map(this._addTraceMarkers.bind(this, inputCoordinates));
+
+    this._candidateGroups.clearLayers();
     states.map(function(candidates, i) {
       this._addCandidateMarkers(candidates, colors.darkened[i % colors.darkened.length]);
     }.bind(this));
   },
 
-  _addTraceMarkers: function (trace) {
+  _addTraceMarkers: function (inputCoordinates, trace) {
     var group = this._traceGroup;
-    group.clearLayers();
 
-    trace.input_points.map(function (latLng, i) {
-      var m = L.marker(latLng, {
+    trace.indices.map(function (i) {
+      var m = L.marker(inputCoordinates[i], {
         icon: L.mapbox.marker.icon({
           'marker-color': colors.normal[i % colors.normal.length]
         }),

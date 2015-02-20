@@ -14,7 +14,7 @@ function geojsonToCoordinates(geojson) {
   return [];
 }
 
-function onMatched(err, response) {
+function onMatched(coordinates, err, response) {
   if (err) return;
 
   var states = response.debug.states,
@@ -24,7 +24,7 @@ function onMatched(err, response) {
   d3.selectAll("#trellis").remove();
 
   trellis.buildDiagramm(states, breakage);
-  matchingLayer.update(states, traces);
+  matchingLayer.update(coordinates, states, traces);
   map.fitBounds(matchingLayer.getBounds());
 }
 
@@ -50,7 +50,7 @@ function showMatching(id, next) {
       var geojson = toGeoJSON.gpx(xml),
           coordinates = geojsonToCoordinates(geojson);
 
-      osrm.match(coordinates, onMatched);
+      osrm.match(coordinates, onMatched.bind(null, coordinates));
     });
   });
 }
