@@ -13,6 +13,12 @@ To install the server components. Then do:
 
 To install the front-end components.
 
+## Importing traces
+
+To import traces in ```GPX``` or ```CSV``` format contained in a folder ```data``` to the labeling database run:
+
+	node server.js data
+
 ## Starting the frontend
 
 Assuming your GPX traces are contained in a folder ```data``` in the current repository root:

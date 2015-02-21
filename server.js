@@ -17,8 +17,8 @@ function importDirectory(directory) {
       console.log("Database already exists! Skipping.");
       return;
     }
-    console.log("Finding gpx files...");
-    var files = rs.recursiveSearchSync(/.gpx$/, directory),
+    console.log("Finding trace files...");
+    var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory),
         inmemoryDB = low(),
         table = inmemoryDB(DB_NAME);
     console.log("Adding " + files.length + " files to database...");
