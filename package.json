@@ -16,6 +16,7 @@
     "osrm-client": "^0.0.2",
     "polyline": "^0.0.3",
     "recursive-search": "^1.0.1",
+    "regenbogen": "^1.0.3",
     "request": "^2.53.0",
     "xmldom": "^0.1.19"
   },

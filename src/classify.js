@@ -7,12 +7,16 @@ var colors = require('./colors.js'),
 
 var trace = {},
     traceLine,
+    traceLineOutline,
     history = [];
 
 function onMatched(coordinates, err, response) {
   if (err) return;
 
-  traceLine = L.polyline(coordinates, {color: 'green', opacityi: 0.5}).addTo(map);
+  if (traceLine) map.removeLayer(traceLine);
+  if (traceLineOutline) map.removeLayer(traceLineOutline);
+  traceLineOutline = L.polyline(coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
+  traceLine = L.polyline(coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
 
   matchingLayer.update(response.traces);
   map.fitBounds(matchingLayer.getBounds());

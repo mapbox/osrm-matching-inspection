@@ -1,4 +1,5 @@
-var colors = require('./colors.js');
+var colors = require('./colors.js'),
+    regenbogen = require('regenbogen');
 
 function trellisLayout(vspace, hspace, nodeSize) {
   return {
@@ -12,22 +13,6 @@ function trellisLayout(vspace, hspace, nodeSize) {
   };
 }
 
-// Returns color on grandient that matches to a given f in [0, 1]
-function computeColor(f) {
-  var start = [255, 255, 255],
-      end = [0, 255, 0],
-      hex = '#',
-      hexVal,
-      i;
-  for (i = 0; i < 3; i++) {
-    hexVal = Math.floor((1-f) * start[i] + f * end[i]).toString(16);
-    if (hexVal.length < 2) {
-      hexVal = '0' + hexVal;
-    }
-    hex += hexVal;
-  }
-  return hex;
-}
 
 var Trellis = L.Class.extend({
   includes: L.Mixin.Events,
@@ -59,13 +44,14 @@ var Trellis = L.Class.extend({
     var maxViterbi = states.map(function(col) { return Math.max.apply(null, col.map(function(s) { return s.viterbi; })); }),
         minViterbi = states.map(function(col) { return Math.min.apply(null, col.map(function(s) { return s.viterbi; })); }),
         nodes = states.reduce(function(arr, l, i) {
+          var gradient = regenbogen(['white', 'green']);
           return arr.concat(l.map(function(s, j) {
             return {
               x: layout.getNodeX(i, j),
               y: layout.getNodeY(i, j),
               idx: [i, j],
               state: s,
-              color: s.pruned ? '#ccc' : computeColor((s.viterbi - minViterbi[i]) / (maxViterbi[i] - minViterbi[i]))
+              color: s.pruned ? '#ccc' : gradient((s.viterbi - minViterbi[i]) / (maxViterbi[i] - minViterbi[i]))
             };
           }));
         }, []);

@@ -1,5 +1,6 @@
 var polyline = require('polyline'),
-    colors = require('./colors.js');
+    colors = require('./colors.js'),
+    regenbogen = require('regenbogen');
 
 var MatchingLayer = L.Class.extend({
   options: {
@@ -9,13 +10,19 @@ var MatchingLayer = L.Class.extend({
   initialize: function(options) {
     L.Util.setOptions(this, options);
     this._group = L.layerGroup();
+    this._gradient = regenbogen(['red', 'yellow', 'green']);
   },
 
   update: function(subtraces) {
     this._group.clearLayers();
 
     subtraces.forEach(function (t) {
-      var line = L.polyline(polyline.decode(t.geometry, 6), this.options.style);
+      var style = this.options.style;
+      if (t.confidence !== undefined)
+      {
+        style.color = this._gradient(t.confidence);
+      }
+      var line = L.polyline(polyline.decode(t.geometry, 6), style);
       this._group.addLayer(line);
     }.bind(this));
 
