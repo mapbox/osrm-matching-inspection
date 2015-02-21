@@ -1,32 +1,21 @@
-require('mapbox.js');
-var colors = require('./colors.js');
+var colors = require('./colors.js'),
+    utils = require('./utils.js'),
+    layers = require('./layers.js'),
+    matchingLayer = layers.matchingLayer(),
+    OSRM = require('osrm-client'),
+    osrm = new OSRM('//127.0.0.1:5000');
 
 var trace = {},
     traceLine,
     history = [];
 
-function geojsonToCoordinates(geojson) {
-  if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
-    return geojson.features[0].geometry.coordinates.map(function(d) {return L.latLng(d[1], d[0]);});
-  }
-  return [];
-}
+function onMatched(coordinates, err, response) {
+  if (err) return;
 
-function routingShim(response, inputWaypoints, callback, context) {
+  traceLine = L.polyline(coordinates, {color: 'green', opacityi: 0.5}).addTo(map);
 
-  if (traceLine) map.removeLayer(traceLine);
-
-  var wps = inputWaypoints.map(function(wp) { return wp.latLng; });
-
-  traceLine = L.polyline(wps, {color: 'green', opacityi: 0.5}).addTo(map);
-
-  routeDoneFunc.call(router, response, inputWaypoints, callback, context);
-}
-
-function getURLParam(name) {
-  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-  if (results) return results[1] || null;
-  return null;
+  matchingLayer.update(response.traces);
+  map.fitBounds(matchingLayer.getBounds());
 }
 
 function showMatching(id, next) {
@@ -43,9 +32,9 @@ function showMatching(id, next) {
 
     $.ajax(trace.file).done(function(xml) {
       var geojson = toGeoJSON.gpx(xml),
-          coordinates = geojsonToCoordinates(geojson);
+          coordinates = utils.geojsonToTrace(geojson);
 
-      lrm.setWaypoints(coordinates);
+      osrm.match(coordinates, onMatched.bind(null, coordinates));
     });
   });
 }
@@ -60,29 +49,10 @@ function showPrevMatching() {
 }
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
-var map = L.mapbox.map('map', 'themarex.kel82add'),
-    lrm = L.Routing.control({
-      position: 'bottomright',
-      serviceUrl: '//127.0.0.1:5000/match',
-      routeWhileDragging: true,
-      createMarker: function(i, wp, n) {
-        var marker = L.circleMarker(wp.latLng, {stroke: false,
-                                                fill: true,
-                                                fillColor: colors.normal[i % colors.normal.length],
-                                                radius: 10,
-                                                fillOpacity: 0.5,
-                                                draggable: true});
-        return marker;
-      }
-    }).addTo(map),
-    router = lrm.getRouter(),
-    routeDoneFunc = router._routeDone;
+var map = L.mapbox.map('map', 'themarex.kel82add');
+matchingLayer.addTo(map);
 
-
-router._routeDone = routingShim;
-
-
-var id = getURLParam('id');
+var id = utils.getURLParam('id');
 showMatching(parseInt(id) || undefined);
 
 $('body').on('keydown', function(e) {

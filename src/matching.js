@@ -2,18 +2,12 @@ var OSRM = require('osrm-client'),
     diagram = require('./diagram.js'),
     colors = require('./colors.js'),
     layers = require('./layers.js'),
+    utils = require('./utils.js'),
     matchingLayer = layers.debugMatchingLayer(),
     osrm = new OSRM('//127.0.0.1:5000'),
     trace = {},
     history = [],
     trellis;
-
-function geojsonToCoordinates(geojson) {
-  if (geojson && geojson.features && geojson.features.length && geojson.features[0].geometry) {
-    return geojson.features[0].geometry.coordinates.map(function(d) {return [d[1], d[0]];});
-  }
-  return [];
-}
 
 function updateTransitionInfo(p) {
   var probs = d3.select("#probs")
@@ -42,12 +36,6 @@ function onMatched(coordinates, err, response) {
   map.fitBounds(matchingLayer.getBounds());
 }
 
-function getURLParam(name) {
-  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-  if (results) return results[1] || null;
-  return null;
-}
-
 function showMatching(id, next) {
   var url = 'http://127.0.0.1:8337/trace/unknown';
   if (id !== undefined) url += '/' + id;
@@ -62,7 +50,7 @@ function showMatching(id, next) {
 
     $.ajax(trace.file).done(function(xml) {
       var geojson = toGeoJSON.gpx(xml),
-          coordinates = geojsonToCoordinates(geojson);
+          coordinates = utils.geojsonToTrace(geojson);
 
       osrm.match(coordinates, onMatched.bind(null, coordinates));
     });
@@ -85,7 +73,7 @@ var map = L.mapbox.map('map', 'themarex.kel82add'),
 matchingLayer.addTo(map);
 edit.addTo(map);
 
-var id = getURLParam('id');
+var id = utils.getURLParam('id');
 showMatching(parseInt(id) || undefined);
 
 $('body').on('keydown', function(e) {
