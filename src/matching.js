@@ -74,6 +74,7 @@ matchingLayer.addTo(map);
 edit.addTo(map);
 
 var id = utils.getURLParam('id');
+console.log(id);
 showMatching(parseInt(id) || undefined);
 
 $('body').on('keydown', function(e) {
