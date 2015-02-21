@@ -21,7 +21,7 @@ function updateTransitionInfo(p) {
                   });
 }
 
-function onMatched(coordinates, err, response) {
+function onMatched(trace, err, response) {
   if (err) return;
 
   var states = response.debug.states,
@@ -32,7 +32,7 @@ function onMatched(coordinates, err, response) {
 
   trellis = diagram.trellis(d3.select("#info"), matchingLayer, states, breakage);
   trellis.on('transitionselected', updateTransitionInfo);
-  matchingLayer.update(coordinates, states, traces);
+  matchingLayer.update(trace.coordinates, states, traces);
   map.fitBounds(matchingLayer.getBounds());
 }
 
@@ -50,9 +50,9 @@ function showMatching(id, next) {
 
     $.ajax(trace.file).done(function(xml) {
       var geojson = toGeoJSON.gpx(xml),
-          coordinates = utils.geojsonToTrace(geojson);
+          trace = utils.geojsonToTrace(geojson);
 
-      osrm.match(coordinates, onMatched.bind(null, coordinates));
+      osrm.match(trace.coordinates, trace.times, onMatched.bind(null, trace));
     });
   });
 }
@@ -74,7 +74,6 @@ matchingLayer.addTo(map);
 edit.addTo(map);
 
 var id = utils.getURLParam('id');
-console.log(id);
 showMatching(parseInt(id) || undefined);
 
 $('body').on('keydown', function(e) {
