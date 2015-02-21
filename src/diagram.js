@@ -44,7 +44,7 @@ var Trellis = L.Class.extend({
     var maxViterbi = states.map(function(col) { return Math.max.apply(null, col.map(function(s) { return s.viterbi; })); }),
         minViterbi = states.map(function(col) { return Math.min.apply(null, col.map(function(s) { return s.viterbi; })); }),
         nodes = states.reduce(function(arr, l, i) {
-          var gradient = regenbogen(['white', 'green']);
+          var gradient = regenbogen(['white', 'lime']);
           return arr.concat(l.map(function(s, j) {
             return {
               x: layout.getNodeX(i, j),
