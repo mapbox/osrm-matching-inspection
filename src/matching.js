@@ -1,4 +1,5 @@
 var OSRM = require('osrm-client'),
+    csv2geojson = require('csv2geojson'),
     diagram = require('./diagram.js'),
     colors = require('./colors.js'),
     layers = require('./layers.js'),
@@ -48,11 +49,24 @@ function showMatching(id, next) {
 
     window.document.title = "Matching (" + trace.id + "): " + trace.file;
 
-    $.ajax(trace.file).done(function(xml) {
-      var geojson = toGeoJSON.gpx(xml),
-          trace = utils.geojsonToTrace(geojson);
+    $.ajax(trace.file).done(function(content) {
+      function onParsed(error, geojson) {
+        if (error) return;
 
-      osrm.match(trace.coordinates, trace.times, onMatched.bind(null, trace));
+        var t = utils.geojsonToTrace(geojson);
+        osrm.match(t.coordinates, t.times, onMatched.bind(null, trace));
+      }
+
+      if (/\.gpx$/g.test(trace.file))
+      {
+        onParsed(toGeoJSON.gpx(content));
+      } else if (/\.csv$/g.test(trace.file)) {
+        csv2geojson.csv2geojson(content, function(error, geojson) {
+          onParsed(error, csv2geojson.toLine(geojson));
+        });
+      } else {
+        onParsed(new Error("Unknown file format: " + trace.file));
+      }
     });
   });
 }

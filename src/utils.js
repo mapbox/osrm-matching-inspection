@@ -9,8 +9,9 @@ function geojsonToTrace(geojson) {
     trace.coordinates = feature.geometry.coordinates.map(function(d) {return [d[1], d[0]];});
     if (feature.properties && feature.properties.coordTimes) {
       trace.times = feature.properties.coordTimes.map(function(t) {
-        var unixMS = new Date(t).valueOf();
-        return Math.floor(unixMS/1000.0);
+        return parseInt(t);
+        //var unixMS = new Date(parseInt(t)).valueOf();
+        //return Math.floor(unixMS/1000.0);
       });
     }
   }
