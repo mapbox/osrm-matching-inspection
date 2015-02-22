@@ -27,13 +27,13 @@ function onMatched(trace, err, response) {
 
   var states = response.debug.states,
       breakage = response.debug.breakage,
-      traces = response.traces;
+      matchings = response.matchings;
 
   d3.selectAll("#trellis").remove();
 
   trellis = diagram.trellis(d3.select("#info"), matchingLayer, states, breakage);
   trellis.on('transitionselected', updateTransitionInfo);
-  matchingLayer.update(trace.coordinates, states, traces);
+  matchingLayer.update(trace.coordinates, states, matchings);
   map.fitBounds(matchingLayer.getBounds());
 }
 

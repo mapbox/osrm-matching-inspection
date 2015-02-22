@@ -18,7 +18,7 @@ function onMatched(trace, err, response) {
   traceLineOutline = L.polyline(trace.coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
   traceLine = L.polyline(trace.coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
 
-  matchingLayer.update(response.traces);
+  matchingLayer.update(response.matchings);
   map.fitBounds(matchingLayer.getBounds());
 }
 
