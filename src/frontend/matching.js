@@ -1,12 +1,8 @@
-var OSRM = require('osrm-client'),
-    csv2geojson = require('csv2geojson'),
-    diagram = require('./diagram.js'),
+var diagram = require('./diagram.js'),
     colors = require('./colors.js'),
     layers = require('./layers.js'),
     utils = require('./utils.js'),
     matchingLayer = layers.debugMatchingLayer(),
-    osrm = new OSRM('//127.0.0.1:5000'),
-    trace = {},
     history = [],
     trellis;
 
@@ -22,12 +18,11 @@ function updateTransitionInfo(p) {
                   });
 }
 
-function onMatched(trace, err, response) {
-  if (err) return;
-
+function onMatched(response) {
   var states = response.debug.states,
       breakage = response.debug.breakage,
-      matchings = response.matchings;
+      matchings = response.matchings,
+      trace = response.trace;
 
   d3.selectAll("#trellis").remove();
 
@@ -43,31 +38,13 @@ function showMatching(id, next) {
   if (next !== undefined) url += '/next';
 
   $.getJSON(url, function(data) {
-    trace = data.trace;
+    var trace = data.trace;
 
     history.push(trace.id);
 
     window.document.title = "Matching (" + trace.id + "): " + trace.file;
 
-    $.ajax(trace.file).done(function(content) {
-      function onParsed(error, geojson) {
-        if (error) return;
-
-        var t = utils.geojsonToTrace(geojson);
-        osrm.match({coordinates: t.coordinates, timestamps: t.times}, onMatched.bind(null, trace));
-      }
-
-      if (/\.gpx$/g.test(trace.file))
-      {
-        onParsed(toGeoJSON.gpx(content));
-      } else if (/\.csv$/g.test(trace.file)) {
-        csv2geojson.csv2geojson(content, function(error, geojson) {
-          onParsed(error, csv2geojson.toLine(geojson));
-        });
-      } else {
-        onParsed(new Error("Unknown file format: " + trace.file));
-      }
-    });
+    $.getJSON('http://127.0.0.1:8337/match/' + trace.id, onMatched);
   });
 }
 

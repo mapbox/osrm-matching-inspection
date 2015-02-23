@@ -22,7 +22,7 @@ var MatchingLayer = L.Class.extend({
       {
         style.color = this._gradient(t.confidence);
       }
-      var line = L.polyline(polyline.decode(t.geometry, 6), style);
+      var line = L.polyline(polyline.decode(t.geometry, 6)/*t.matched_points*/, style);
       this._group.addLayer(line);
     }.bind(this));
 
