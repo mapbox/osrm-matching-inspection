@@ -4,4 +4,5 @@ labels.json
 data
 dist
 node_modules
+bower_components
 
