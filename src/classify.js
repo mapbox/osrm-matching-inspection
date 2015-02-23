@@ -38,7 +38,7 @@ function showMatching(id, next) {
       var geojson = toGeoJSON.gpx(xml),
           trace = utils.geojsonToTrace(geojson);
 
-      osrm.match(trace.coordinates, trace.times, onMatched.bind(null, trace));
+      osrm.match({coordinates: trace.coordinates, timestamps: trace.times}, onMatched.bind(null, trace));
     });
   });
 }

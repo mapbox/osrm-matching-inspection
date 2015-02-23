@@ -54,7 +54,7 @@ function showMatching(id, next) {
         if (error) return;
 
         var t = utils.geojsonToTrace(geojson);
-        osrm.match(t.coordinates, t.times, onMatched.bind(null, trace));
+        osrm.match({coordinates: t.coordinates, timestamps: t.times}, onMatched.bind(null, trace));
       }
 
       if (/\.gpx$/g.test(trace.file))
