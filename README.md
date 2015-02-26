@@ -19,23 +19,28 @@ To import traces in ```GPX``` or ```CSV``` format contained in a folder ```data`
 
 	node server.js data
 
+This will create a file ```data/clasification_db.json``` which will contain a list of all traces and their classification.
+
 ## Starting the frontend
 
 Assuming your GPX traces are contained in a folder ```data``` in the current repository root:
 
 Locally run:
-	node server.js
+	node server.js data path/to/dataset.osrm
 
-This will start a http server that listens on ```http://127.0.0.1:8337```.
+Alternatively if you want to use osrm-routed instead of node-osrm just run:
+	node server.js data
 
-If you open this in your browser you will see something similar to this:
+Which expects a osrm-routed server listening on ```http://127.0.0.1:5000```.
+
+Now you can view the frontend on ```http://127.0.0.1:8337``` in your browser. It will look somewhat like this:
 
 ![](http://i.imgur.com/XvMjiVC.png)
 
 Which shows an interactive trellis diagram of the matching. Select a state pair to view the transition probabilities
 and Viterbi values.
 
-You can use the left and right arrow key to cycle through the GPX traces.
+You can use the left and right arrow key to cycle through the traces.
 
 ## Classifying
 
