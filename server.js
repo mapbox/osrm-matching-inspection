@@ -4,11 +4,12 @@ var TABLE_NAME = 'traces';
 
 var express = require('express'),
     path = require('path'),
-    OSRM = require('osrm'),
     dbLoader = require('./src/server/db.js'),
     dbInterface = require('./src/server/db_interface.js'),
     clsInterface = require('./src/server/classification_interface.js'),
     matchingInterface = require('./src/server/matching_interface.js'),
+    OSRM = require('osrm'),
+    OSRMClient = require('osrm-client'),
     app = express();
 
 if (process.argv.length < 3) {
@@ -18,8 +19,9 @@ if (process.argv.length < 3) {
 var directory = process.argv[2],
     // TODO fallback to osrm-client if no data is given
     data = process.argv.length > 3 && path.normalize(process.argv[3]) || undefined,
-    osrm = data && new OSRM(data) || undefined,
+    osrm = data && new OSRM(data) || new OSRMClient('http://127.0.0.1:5000'),
     db = dbLoader(directory);
+
 
 dbInterface(app, db(TABLE_NAME));
 clsInterface(app, db(TABLE_NAME));
