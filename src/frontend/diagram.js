@@ -46,12 +46,13 @@ var Trellis = L.Class.extend({
         nodes = states.reduce(function(arr, l, i) {
           var gradient = regenbogen(['white', 'lime']);
           return arr.concat(l.map(function(s, j) {
+            var normalized_viterbi = (s.viterbi - minViterbi[i]) / (maxViterbi[i] - minViterbi[i]);
             return {
               x: layout.getNodeX(i, j),
               y: layout.getNodeY(i, j),
               idx: [i, j],
               state: s,
-              color: s.pruned ? '#ccc' : gradient((s.viterbi - minViterbi[i]) / (maxViterbi[i] - minViterbi[i]))
+              color: s.pruned ? '#ccc' : gradient(normalized_viterbi)
             };
           }));
         }, []);
