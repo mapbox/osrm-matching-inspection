@@ -21,6 +21,7 @@
     "recursive-search": "^1.0.1",
     "regenbogen": "^1.0.3",
     "request": "^2.53.0",
+    "turf": "^2.0.0",
     "xmldom": "^0.1.19"
   },
   "devDependencies": {

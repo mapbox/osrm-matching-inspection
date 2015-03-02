@@ -1,7 +1,8 @@
 var csv2geojson = require('csv2geojson'),
     togeojson = require('togeojson'),
     fs = require('fs'),
-    jsdom = require('jsdom').jsdom;
+    jsdom = require('jsdom').jsdom,
+    turf = require('turf');
 
 function geojsonToTrace(geojson) {
   var trace = {
@@ -39,13 +40,60 @@ function fileToGeoJSON(file, callback) {
   }
 }
 
+// reduce sample rate to sane value filter blobs
+function filterGeoJSON(geojson) {
+  var outputLine = turf.linestring([]),
+      outputGeoJSON = turf.featurecollection([]),
+      minTimeDiff = 5, // 12 sampels / minute
+      minDistance = 10;
+  if (geojson &&
+      geojson.features &&
+      geojson.features.length &&
+      geojson.features[0].geometry) {
+    var feature = geojson.features[0],
+        coords = feature.geometry.coordinates,
+        times = feature.properties && feature.properties.coordTimes || null,
+        prevCoord,
+        prevTime,
+        newCoords,
+        newTimes = [];
+
+    newCoords = coords.filter(function(coord, i) {
+      var p = turf.point(coord),
+          takePoint = true;
+
+      if (i !== 0) {
+        takePoint = (times[i] - prevTime > minTimeDiff) &&
+                    (turf.distance(prevCoord, p)*1000 > minDistance);
+      }
+
+      if (takePoint)
+      {
+        prevCoord = p;
+        prevTime = times[i];
+        newTimes.push(times[i]);
+      }
+
+      return takePoint;
+    });
+
+    if (newCoords.length > 1) {
+      outputLine.geometry.coordinates = newCoords;
+      outputLine.properties = { coordTimes: newTimes };
+      outputGeoJSON.features.push(outputLine);
+    }
+  }
+
+  return outputGeoJSON;
+}
+
 function matchTrace(osrm, file, callback) {
   fileToGeoJSON(file, function onGeojson(err, geojson) {
     if (err) {
       callback(err);
       return;
     }
-    var trace = geojsonToTrace(geojson);
+    var trace = geojsonToTrace(filterGeoJSON(geojson));
 
     osrm.match(trace, function(err, result) {
       if (err) {

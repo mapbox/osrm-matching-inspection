@@ -16,6 +16,9 @@ module.exports = function(app, table, osrm) {
     }
 
     matchTrace(osrm, results[0].file, function(err, result) {
+      if (err) {
+        res.send(JSON.stringify({status: "error", message: err.message}));
+      }
       res.send(JSON.stringify(result));
     });
   });
