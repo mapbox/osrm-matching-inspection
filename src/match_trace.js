@@ -46,6 +46,7 @@ function filterGeoJSON(geojson) {
       outputGeoJSON = turf.featurecollection([]),
       minTimeDiff = 5, // 12 sampels / minute
       minDistance = 10;
+
   if (geojson &&
       geojson.features &&
       geojson.features.length &&
@@ -57,6 +58,13 @@ function filterGeoJSON(geojson) {
         prevTime,
         newCoords,
         newTimes = [];
+
+    if (times && !times[0].match(/^\d+$/)) {
+        times = times.map(function(t) {
+            // js returns dates in milliseconds since epoch
+            return Date.parse(t) / 1000;
+        });
+    }
 
     newCoords = coords.filter(function(coord, i) {
       var p = turf.point(coord),
