@@ -103,6 +103,12 @@ function matchTrace(osrm, file, callback) {
     }
     var trace = geojsonToTrace(filterGeoJSON(geojson));
 
+    if (trace.coordinates.length < 2)
+    {
+        callback(new Error("Trace should at least contain two points!"));
+        return;
+    }
+
     osrm.match(trace, function(err, result) {
       if (err) {
         callback(err, null);
