@@ -7,7 +7,9 @@ var colors = require('./colors.js'),
 var trace = {},
     traceLine,
     traceLineOutline,
-    history = [];
+    matchings = [],
+    traceId = 0,
+    subTraceIdx = 0;
 
 function onMatched(err, pkg, response) {
   if (err) {
@@ -15,12 +17,15 @@ function onMatched(err, pkg, response) {
       return;
   }
 
+  subTraceIdx = 0;
+
   if (traceLine) map.removeLayer(traceLine);
   if (traceLineOutline) map.removeLayer(traceLineOutline);
   traceLineOutline = L.polyline(response.trace.coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
   traceLine = L.polyline(response.trace.coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
 
-  matchingLayer.update(response.matchings);
+  matchings = response.matchings;
+  matchingLayer.update([matchings[subTraceIdx]]);
   map.fitBounds(matchingLayer.getBounds());
 }
 
@@ -32,20 +37,28 @@ function showMatching(id, next) {
   request.get({uri: url, json: true}, function(err, pkg, data) {
     trace = data.trace;
 
-    history.push(trace.id);
-
-    window.document.title = "Classify (" + trace.id + "): " + trace.file;
+    traceId = trace.id;
+    window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
 
     request.get({uri: 'http://127.0.0.1:8337/match/' + trace.id, json: true}, onMatched);
   });
 }
 
-function showNextMatching() { if (history.length > 0) showMatching(history[history.length-1], true); }
+function showNextMatching() {
+  if (subTraceIdx < matchings.length-1)
+  {
+      subTraceIdx++;
+      matchingLayer.update([matchings[subTraceIdx]]);
+      window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
+  } else {
+    showMatching(traceId, true);
+  }
+}
 function showPrevMatching() {
-  if (history.length > 1) {
-    showMatching(history[history.length-2]);
-    history.pop();
-    history.pop();
+  if (subTraceIdx > 0) {
+    subTraceIdx--;
+    matchingLayer.update([matchings[subTraceIdx]]);
+    window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
   }
 }
 
@@ -65,9 +78,7 @@ $('body').on('keydown', function(e) {
 });
 
 function classifyCurrentTrace(cls) {
-  if (history.length === 0) return;
-
-  var url = 'http://127.0.0.1:8337/classify/' + history[history.length-1] + '/' + cls;
+  var url = 'http://127.0.0.1:8337/classify/' + traceId + '/' + cls + '/' + subTraceIdx;
   request.get({uri: url, json: true}, showNextMatching);
 }
 
