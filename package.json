@@ -12,6 +12,7 @@
   "dependencies": {
     "async": "^0.9.0",
     "browserify": "^9.0.3",
+    "browser-request": "^0.3.3",
     "csv2geojson": "^4.0.0",
     "express": "^4.11.0",
     "jsdom": "^3.1.2",

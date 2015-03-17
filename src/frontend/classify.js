@@ -1,22 +1,24 @@
 var colors = require('./colors.js'),
     utils = require('./utils.js'),
     layers = require('./layers.js'),
-    matchingLayer = layers.matchingLayer(),
-    OSRM = require('osrm-client'),
-    osrm = new OSRM('//127.0.0.1:5000');
+    request = require('browser-request'),
+    matchingLayer = layers.matchingLayer();
 
 var trace = {},
     traceLine,
     traceLineOutline,
     history = [];
 
-function onMatched(trace, err, response) {
-  if (err) return;
+function onMatched(err, pkg, response) {
+  if (err) {
+      console.log(err);
+      return;
+  }
 
   if (traceLine) map.removeLayer(traceLine);
   if (traceLineOutline) map.removeLayer(traceLineOutline);
-  traceLineOutline = L.polyline(trace.coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
-  traceLine = L.polyline(trace.coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
+  traceLineOutline = L.polyline(response.trace.coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
+  traceLine = L.polyline(response.trace.coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
 
   matchingLayer.update(response.matchings);
   map.fitBounds(matchingLayer.getBounds());
@@ -27,19 +29,14 @@ function showMatching(id, next) {
   if (id !== undefined) url += '/' + id;
   if (next !== undefined) url += '/next';
 
-  $.getJSON(url, function(data) {
+  request.get({uri: url, json: true}, function(err, pkg, data) {
     trace = data.trace;
 
     history.push(trace.id);
 
     window.document.title = "Classify (" + trace.id + "): " + trace.file;
 
-    $.ajax(trace.file).done(function(xml) {
-      var geojson = toGeoJSON.gpx(xml),
-          trace = utils.geojsonToTrace(geojson);
-
-      osrm.match({coordinates: trace.coordinates, timestamps: trace.times}, onMatched.bind(null, trace));
-    });
+    request.get({uri: 'http://127.0.0.1:8337/match/' + trace.id, json: true}, onMatched);
   });
 }
 
@@ -71,10 +68,10 @@ function classifyCurrentTrace(cls) {
   if (history.length === 0) return;
 
   var url = 'http://127.0.0.1:8337/classify/' + history[history.length-1] + '/' + cls;
-  $.getJSON(url, showNextMatching);
+  request.get({uri: url, json: true}, showNextMatching);
 }
 
-$.getJSON('http://127.0.0.1:8337/classes', function(data) {
+request.get({uri: 'http://127.0.0.1:8337/classes', json: true}, function(err, pkg, data) {
   classes = data.classes;
 
   d3.select('#classes').selectAll('.classify')
