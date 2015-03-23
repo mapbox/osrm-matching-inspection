@@ -18,7 +18,7 @@
     "jsdom": "^3.1.2",
     "lowdb": "^0.6.1",
     "osrm": "git://github.com/Project-OSRM/node-osrm.git#2134b6692bc39a9c535c6d0e8ff32aa4f0d97a05",
-    "osrm-client": "0.0.5",
+    "osrm-client": "0.0.9",
     "polyline": "^0.0.3",
     "recursive-search": "^1.0.1",
     "regenbogen": "^1.0.3",

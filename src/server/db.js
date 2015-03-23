@@ -6,7 +6,7 @@ var low = require('lowdb'),
     TABLE_NAME = 'traces';
 
 function importDirectory(target, directory) {
-  console.log("Finding trace files...");
+  console.error("Finding trace files...");
   var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory),
       inmemoryDB = low(),
       table = inmemoryDB(TABLE_NAME);
@@ -20,7 +20,7 @@ function loadDB(directory) {
   var targetFilename = path.join(directory, 'classification_db.json');
 
   if (!fs.existsSync(targetFilename)) {
-    console.log("Could not find: " + targetFilename + ". Importing...");
+    console.error("Could not find: " + targetFilename + ". Importing...");
     importDirectory(targetFilename, directory);
   }
 

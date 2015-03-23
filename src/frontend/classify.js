@@ -30,7 +30,7 @@ function onMatched(err, pkg, response) {
 }
 
 function showMatching(id, next) {
-  var url = 'http://127.0.0.1:8337/trace/unknown';
+  var url = 'http://127.0.0.1:8337/trace/invalid';
   if (id !== undefined) url += '/' + id;
   if (next !== undefined) url += '/next';
 

@@ -109,6 +109,8 @@ function matchTrace(osrm, file, callback) {
         return;
     }
 
+    trace.classify = true;
+
     osrm.match(trace, function(err, result) {
       if (err) {
         callback(err, null);
