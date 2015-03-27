@@ -2,15 +2,16 @@ var classes = require('./classes.js');
 
 function onResponse(table, req, res)
 {
-  console.log(req.params);
   var id = parseInt(req.params.id),
       clsName = req.params.cls,
-      subIdx = req.params.idx,
-      selector = subIdx && {id: id, subIdx: subIdx} || {id: id};
+      subIdx = req.params.idx && parseInt(req.params.idx) || 0,
+      iter = table.findWhere({id: id, subIdx: subIdx});
 
-  table
-    .find(selector)
-    .assign({cls: classes.nameToId[clsName], subIdx: subIdx || 0});
+  if (iter.value() === undefined){
+    table.push({id: id, subIdx: subIdx, cls: classes.nameToId[clsName]});
+  } else {
+    iter.assign({cls: classes.nameToId[clsName]});
+  }
 
   res.send(JSON.stringify({status: "ok"}));
 }
@@ -25,6 +26,5 @@ module.exports = function(app, table) {
   });
 
 
-  app.get('/classify/:id/:cls/:idx', function(req, res) { onResponse(table, req, res); });
-  app.get('/classify/:id/:cls', function(req, res) { onResponse(table, req, res); });
+  app.get('/classify/:id/:idx/:cls', function(req, res) { onResponse(table, req, res); });
 };

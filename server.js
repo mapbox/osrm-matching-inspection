@@ -1,6 +1,7 @@
 #!/bin/node
 
-var TABLE_NAME = 'traces';
+var MATCHINGS_TABLE_NAME = 'matchings',
+    TRACE_TABLE_NAME = 'traces';
 
 var express = require('express'),
     path = require('path'),
@@ -23,12 +24,12 @@ var directory = process.argv[2],
     db = dbLoader(directory);
 
 
-dbInterface(app, db(TABLE_NAME));
-clsInterface(app, db(TABLE_NAME));
+dbInterface(app, db(MATCHINGS_TABLE_NAME));
+clsInterface(app, db(MATCHINGS_TABLE_NAME));
 
 if (osrm) {
   console.log("Matching: Enabled.");
-  matchingInterface(app, db(TABLE_NAME), osrm);
+  matchingInterface(app, db(TRACE_TABLE_NAME), osrm);
 }
 
 app.use(express.static(__dirname));

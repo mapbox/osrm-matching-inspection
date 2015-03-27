@@ -1,11 +1,9 @@
 var matchTrace = require('../match_trace.js');
 
 module.exports = function(app, table, osrm) {
-  console.log("Getting interface");
   app.get('/match/:id', function(req, res) {
-    var id = parseInt(req.params.id);
-
-    var results = table
+    var id = parseInt(req.params.id),
+        results = table
                    .where({id: id})
                    .first(1)
                    .value();

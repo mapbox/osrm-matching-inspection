@@ -33,7 +33,7 @@ function onMatched(response) {
 }
 
 function showMatching(id, next) {
-  var url = 'http://127.0.0.1:8337/trace/invalid';
+  var url = 'http://127.0.0.1:8337/trace/unknown';
   if (id !== undefined) url += '/' + id;
   if (next !== undefined) url += '/next';
 
@@ -44,7 +44,7 @@ function showMatching(id, next) {
 
     history.push(trace.id);
 
-    window.document.title = "Matching (" + trace.id + "): " + trace.file;
+    window.document.title = "Matching " + trace.id;
 
     $.getJSON('http://127.0.0.1:8337/match/' + trace.id, onMatched);
   });

@@ -44,8 +44,6 @@ function classify(confidence, cls) {
 
 function classifyTrace(trace, callback) {
   matchTrace(osrm, trace.file, function (err, response) {
-    // remove original trace -> would blow up database
-    //response.trace = undefined;
     if (err)
     {
       console.error(err);
@@ -72,7 +70,7 @@ function onMapped(error, responses) {
       fn = classifiedResponses.filter(function(t) { return t.cls === classes.nameToId['false-invalid']; }).length,
       respDB = low(targetFilename);
 
-  //classifiedResponses.forEach(function(r) { respDB(TABLE_NAME).push(r); });
+  classifiedResponses.forEach(function(r) { respDB(TABLE_NAME).push(r); });
 
   console.error("valid: " + p);
   console.error("invalid: " + n);

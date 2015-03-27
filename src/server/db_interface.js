@@ -10,10 +10,7 @@ function handleTrace(table, selectedCls, selectedId) {
   records = table.where(selector).first(1).value();
 
   if (records.length > 0) {
-    reply.trace = {
-      id: records[0].id,
-      file: records[0].file
-    };
+    reply.trace = { id: records[0].id };
   }
 
   return JSON.stringify(reply);
@@ -42,11 +39,5 @@ module.exports = function(app, table) {
     }
 
     res.send(JSON.stringify({status: "ok"}));
-  });
-
-  app.get('/trace/:cls', function(req, res) {
-    var selectedCls = req.params.cls;
-
-    res.send(handleTrace(table, selectedCls));
   });
 };
