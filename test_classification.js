@@ -1,8 +1,10 @@
 #!/bin/node
 
-var TABLE_NAME = 'traces';
+var TRACE_TABLE_NAME = 'traces';
+    MATCHING_TABLE_NAME = 'matchings';
 
 var path = require('path'),
+    fs = require('fs'),
     async = require('async'),
     low = require('lowdb'),
     OSRM = require('osrm'),
@@ -18,16 +20,34 @@ if (process.argv.length < 3) {
 }
 
 var directory = process.argv[2],
-    targetFilename = path.join(directory, 'tested_db.json');
+    targetFilename = path.join(directory, 'tested_db.json'),
     // TODO fallback to osrm-client if no data is given
     data = process.argv.length > 3 && path.normalize(process.argv[3]) || undefined,
     osrm = data && new OSRM(data) || new OSRMClient('http://127.0.0.1:5000'),
-    db = dbLoader(directory);
+    db = dbLoader(directory),
+    respDB;
+
+if (fs.existsSync(targetFilename)) {
+  fs.unlinkSync(targetFilename);
+}
+respDB = low(targetFilename);
 
 function getLabeledTraces() {
-  var validRecords = db(TABLE_NAME).where({cls: classes.nameToId['valid']}).value(),
-      invalidRecords = db(TABLE_NAME).where({cls: classes.nameToId['invalid']}).value(),
-      labeledTraces = validRecords.concat(invalidRecords);
+  var traceGroups = db(MATCHING_TABLE_NAME)
+                    .filter(function (r) {
+                      return r.cls === classes.nameToId['valid'] ||
+                             r.cls === classes.nameToId['invalid'];
+                     })
+                    .groupBy('id')
+                    .value(),
+      labeledTraces = [],
+      trace;
+
+  // construct actual array
+  for (var key in traceGroups) {
+    trace = db(TRACE_TABLE_NAME).find({id: traceGroups[key][0].id}).value();
+    labeledTraces.push([trace.file, traceGroups[key]]);
+  }
 
   console.error("Testing " + labeledTraces.length + " labeled traces.");
 
@@ -42,35 +62,60 @@ function classify(confidence, cls) {
   return confidence > 0.5 ? classes.nameToId['false-valid'] : classes.nameToId['invalid'];
 }
 
-function classifyTrace(trace, callback) {
-  matchTrace(osrm, trace.file, function (err, response) {
+function classifyTrace(traceGroup, callback) {
+  var submatchings = traceGroup[1];
+  matchTrace(osrm, traceGroup[0], function (err, response) {
     if (err)
     {
       console.error(err);
     }
 
-    var subIdx = trace.subIdx || 0;
-
-    if (response && response.matchings && response.matchings.length > subIdx)
+    if (!response || !response.matchings)
     {
-      trace.cls = classify(response.matchings[subIdx].confidence, trace.cls);
+      callback(null, []);
+      return;
     }
-    trace.response = response;
-    callback(null, trace);
+
+    var p = 0, n = 0, fp = 0, fn = 0;
+
+    submatchings.forEach(function(submatching) {
+      var subIdx = submatching.subIdx,
+          result = response.matchings[subIdx],
+          cls = classify(result.confidence, submatching.cls),
+          data = {
+            'geometry': result.geometry,
+            'matched': result.matched_points,
+            'trace': result.indices.map(function(i) {return response.trace[i];}),
+            'cls': cls
+          };
+
+      p  += cls === classes.nameToId['valid'] && 1 || 0;
+      n  += cls === classes.nameToId['invalid'] && 1 || 0;
+      fp += cls === classes.nameToId['false-valid'] && 1 || 0;
+      fn += cls === classes.nameToId['false-invalid'] && 1 || 0;
+
+      respDB(MATCHING_TABLE_NAME).push(data);
+    });
+
+
+    callback(null, [p, n, fp, fn]);
   });
 }
 
 function onMapped(error, responses) {
   if (error) console.error(error);
 
-  var classifiedResponses = responses.filter(function(c) { return c !== null; }),
-      p  = classifiedResponses.filter(function(t) { return t.cls === classes.nameToId['valid']; }).length,
-      n  = classifiedResponses.filter(function(t) { return t.cls === classes.nameToId['invalid']; }).length,
-      fp = classifiedResponses.filter(function(t) { return t.cls === classes.nameToId['false-valid']; }).length,
-      fn = classifiedResponses.filter(function(t) { return t.cls === classes.nameToId['false-invalid']; }).length,
-      respDB = low(targetFilename);
+  var sums = responses.reduce(function(prev, curr) {
+    for (var i = 0; i < prev.length; i++) {
+        prev[i] += curr[i];
+    }
+    return prev;
+  }, [0, 0, 0, 0]);
 
-  classifiedResponses.forEach(function(r) { respDB(TABLE_NAME).push(r); });
+  var p = sums[0],
+      n = sums[1],
+      fp = sums[2],
+      fn = sums[3];
 
   console.error("valid: " + p);
   console.error("invalid: " + n);
@@ -80,5 +125,7 @@ function onMapped(error, responses) {
   console.error("-> FN-Rate: " + fn / (fn + p));
 }
 
-async.map(getLabeledTraces(), classifyTrace, onMapped);
+console.log("Getting labeled traces...");
+var labeledTraces = getLabeledTraces();
+async.map(labeledTraces, classifyTrace, onMapped);
 

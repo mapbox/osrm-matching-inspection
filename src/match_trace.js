@@ -27,17 +27,22 @@ function geojsonToTrace(geojson) {
 }
 
 function fileToGeoJSON(file, callback) {
-  var content = fs.readFileSync(file, 'utf-8');
+  fs.readFile(file, 'utf-8', function(err, content) {
+    if (err) {
+        callback(err);
+        return;
+    }
 
-  if (/\.gpx$/g.test(file)) {
-    callback(null, togeojson.gpx(jsdom(content)));
-  } else if (/\.csv$/g.test(file)) {
-    csv2geojson.csv2geojson(content, function(error, geojson) {
-      callback(error, geojson && csv2geojson.toLine(geojson));
-    });
-  } else {
-    callback(new Error("Unknown file format: " + file));
-  }
+    if (/\.gpx$/g.test(file)) {
+      callback(null, togeojson.gpx(jsdom(content)));
+    } else if (/\.csv$/g.test(file)) {
+      csv2geojson.csv2geojson(content, function(error, geojson) {
+        callback(error, geojson && csv2geojson.toLine(geojson));
+      });
+    } else {
+      callback(new Error("Unknown file format: " + file));
+    }
+  });
 }
 
 // reduce sample rate to sane value filter blobs
