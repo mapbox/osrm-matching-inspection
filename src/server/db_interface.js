@@ -1,43 +1,71 @@
 var classes = require('./classes.js');
 
-function handleTrace(table, selectedCls, selectedId) {
-  var selector = { cls: classes.nameToId[selectedCls]},
-      reply = { status: "ok" },
-      records;
+function handleTrace(db, res, selectedCls, selectedId) {
+  var reply = { status: "ok" },
+      statement;
 
-  if (selectedId !== undefined) selector.id = selectedId;
 
-  records = table.where(selector).first(1).value();
-
-  if (records.length > 0) {
-    reply.trace = { id: records[0].id };
+  function onRows(err, rows) {
+    if (err) {
+      reply = {status: "error", message: JSON.stringify(err)};
+    } else {
+      reply.subIndices = rows.map(function(r) { return r.subIdx; });
+      reply.id = rows.length > 0 ? rows[0].id : undefined;
+    }
+    res.send(JSON.stringify(reply));
   }
 
-  return JSON.stringify(reply);
+  if (selectedId !== undefined) {
+    statement = db.prepare("SELECT id, subIdx FROM matchings WHERE id = ? AND cls = ?");
+    statement.all(selectedId, selectedCls, onRows);
+  } else {
+    statement = db.prepare("SELECT id, subIdx FROM matchings WHERE cls = ? LIMIT 1");
+    statement.all(selectedCls, onRows);
+  }
 }
 
-module.exports = function(app, table) {
+module.exports = function(app, db) {
   app.get('/trace/:cls/:id', function(req, res) {
-    var selectedCls = req.params.cls,
-        selectedId = parseInt(req.params.id);
+    var selectedCls = classes.nameToId[req.params.cls],
+        selectedId = req.params.id !== undefined && parseInt(req.params.id) || undefined;
 
-    res.send(handleTrace(table, selectedCls, selectedId));
+    if (selectedCls === undefined || (selectedId !== undefined && isNaN(selectedId))) {
+      res.send(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
+      return;
+    }
+
+    handleTrace(db, res, selectedCls, selectedId);
+  });
+
+  app.get('/trace/:cls', function(req, res) {
+    var selectedCls = classes.nameToId[req.params.cls];
+
+    if (selectedCls === undefined) {
+      res.send(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
+      return;
+    }
+
+    handleTrace(db, res, selectedCls);
   });
 
   app.get('/trace/:cls/:id/next', function(req, res) {
-    var selectedCls = req.params.cls,
-        selectedId = parseInt(req.params.id),
-        // FIXME this is a hack and does not scale
-        records = table.where({cls: classes.nameToId[selectedCls]}).sortBy('id').value(),
-        i;
+    var selectedCls = classes.nameToId[req.params.cls],
+        selectedId = parseInt(req.params.id);
 
-    for (i = 0; i < records.length; i++) {
-      if (records[i].id > selectedId) {
-        res.send(handleTrace(table, selectedCls, records[i].id));
-        return;
-      }
+    if (selectedCls === undefined || isNaN(selectedId)) {
+      res.senVd(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
+      return;
     }
 
-    res.send(JSON.stringify({status: "ok"}));
+    var findStatement = db.prepare("SELECT id FROM matchings WHERE id > ? AND cls = ? LIMIT 1");
+    findStatement.get(selectedId, selectedCls, function(err, row) {
+        if (err) {
+          res.send(JSON.stringify({status: "error", message: JSON.stringify(err)}));
+          return;
+        }
+
+        handleTrace(db, res, selectedCls, row.id);
+    });
+
   });
 };

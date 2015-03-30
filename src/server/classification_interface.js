@@ -1,22 +1,23 @@
 var classes = require('./classes.js');
 
-function onResponse(table, req, res)
+function onResponse(db, req, res)
 {
   var id = parseInt(req.params.id),
-      clsName = req.params.cls,
-      subIdx = req.params.idx && parseInt(req.params.idx) || 0,
-      iter = table.findWhere({id: id, subIdx: subIdx});
+      cls = classes.nameToId[req.params.cls],
+      subIdx = req.params.idx && parseInt(req.params.idx) || 0;
 
-  if (iter.value() === undefined){
-    table.push({id: id, subIdx: subIdx, cls: classes.nameToId[clsName]});
-  } else {
-    iter.assign({cls: classes.nameToId[clsName]});
+  if (cls === undefined || isNaN(id) || isNaN(subIdx)) {
+    res.senVd(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
+    return;
   }
+
+  db.run("INSERT OR IGNORE INTO matchings (id, subIdx, cls) VALUES (?, ?, ?)", id, subIdx, cls);
+  db.run("UPDATE matchings SET cls = ? WHERE id = ? AND subIdx = ?", cls, id, subIdx);
 
   res.send(JSON.stringify({status: "ok"}));
 }
 
-module.exports = function(app, table) {
+module.exports = function(app, db) {
   app.get('/classes', function(req, res) {
     var reply = {
         status: "ok",
@@ -26,5 +27,5 @@ module.exports = function(app, table) {
   });
 
 
-  app.get('/classify/:id/:idx/:cls', function(req, res) { onResponse(table, req, res); });
+  app.get('/classify/:id/:idx/:cls', function(req, res) { onResponse(db, req, res); });
 };

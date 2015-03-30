@@ -24,15 +24,26 @@ var directory = process.argv[2],
     db = dbLoader(directory);
 
 
-dbInterface(app, db(MATCHINGS_TABLE_NAME));
-clsInterface(app, db(MATCHINGS_TABLE_NAME));
+dbInterface(app, db);
+clsInterface(app, db);
 
 if (osrm) {
   console.log("Matching: Enabled.");
-  matchingInterface(app, db(TRACE_TABLE_NAME), osrm);
+  matchingInterface(app, db, osrm);
 }
 
 app.use(express.static(__dirname));
 
 console.log("Listening on http://127.0.0.1:8337 ...");
 app.listen(8337);
+
+process.on('SIGINT', function(err) {
+  db.close(function(err) {
+    if (err) {
+      console.error(err);
+    }
+    console.log("Exiting...");
+    process.exit();
+  });
+});
+

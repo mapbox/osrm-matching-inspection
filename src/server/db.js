@@ -1,33 +1,49 @@
-var low = require('lowdb'),
+var sqlite3 = require('sqlite3'),
     rs = require('recursive-search'),
     fs = require('fs'),
     path = require('path'),
-    classes = require('./classes.js'),
-    MATCHINGS_TABLE_NAME = 'matchings';
-    TRACE_TABLE_NAME = 'traces';
+    async = require('async'),
+    classes = require('./classes.js');
 
-function importDirectory(target, directory) {
-  console.error("Finding trace files...");
-  var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory),
-      inmemoryDB = low(),
-      trace_table = inmemoryDB(TRACE_TABLE_NAME);
-      matchings_table = inmemoryDB(MATCHINGS_TABLE_NAME);
+function importDirectory(db, directory, callback) {
+  console.error("Importing.");
+  console.error("  - finding trace files...");
+  var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory).map(function(f, i) { return [i, f]; });
 
-  console.log("Adding " + files.length + " files to database...");
-  files.map(function(f, i) {trace_table.push({id: i, file: f});});
-  files.map(function(f, i) {matchings_table.push({id: i, subIdx: 0, cls: classes.nameToId.unknown});});
-  inmemoryDB.saveSync(target);
+  console.error("  - adding " + files.length + " files to database...");
+
+  db.run("CREATE TABLE traces (id INTEGER PRIMARY KEY, file TEXT)");
+  db.run("CREATE TABLE matchings (id INTEGER, subIdx INTEGER, cls INTEGER, data TEXT, PRIMARY KEY (id, subIdx))");
+
+  db.run("BEGIN TRANSACTION");
+  var traceStatement = db.prepare("INSERT INTO traces(id, file) VALUES (?, ?)");
+  files.forEach(function(file) { traceStatement.run(file[0], file[1]); });
+  traceStatement.finalize();
+  //db.run("CREATE INDEX traces_index ON traces (id)");
+  db.run("END TRANSACTION");
+
+  db.run("BEGIN TRANSACTION");
+  var matchingStatement = db.prepare("INSERT INTO matchings(id, subIdx, cls) VALUES (?, ?, ?)");
+  files.forEach(function(file) { matchingStatement.run(file[0], 0, 0); });
+  matchingStatement.finalize();
+  //db.run("CREATE INDEX matchings_index ON matchings (id, subIdx)");
+  db.run("END TRANSACTION");
+
+  console.error("done.");
 }
 
 function loadDB(directory) {
-  var targetFilename = path.join(directory, 'classification_db.json');
+  var targetFilename = path.join(directory, 'classification_db.sqlite'),
+      db = new sqlite3.Database(targetFilename);
+
+  // run in sequential mode to avoid callback hell
+  db.serialize();
 
   if (!fs.existsSync(targetFilename)) {
-    console.error("Could not find: " + targetFilename + ". Importing...");
-    importDirectory(targetFilename, directory);
+    importDirectory(db, directory);
   }
 
-  return low(targetFilename);
+  return db;
 }
 
 module.exports = loadDB;

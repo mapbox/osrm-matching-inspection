@@ -38,15 +38,15 @@ function showMatching(id, next) {
   if (next !== undefined) url += '/next';
 
   $.getJSON(url, function(data) {
-    var trace = data.trace;
+    var id = data.id;
 
-    if (!trace) return;
+    if (id === undefined) return;
 
-    history.push(trace.id);
+    history.push(id);
 
-    window.document.title = "Matching " + trace.id;
+    window.document.title = "Matching " + id;
 
-    $.getJSON('http://127.0.0.1:8337/match/' + trace.id, onMatched);
+    $.getJSON('http://127.0.0.1:8337/match/' + id, onMatched);
   });
 }
 
