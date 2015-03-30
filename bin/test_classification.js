@@ -6,9 +6,9 @@ var path = require('path'),
     async = require('async'),
     OSRM = require('osrm'),
     OSRMClient = require('osrm-client'),
-    dbLoader = require('./src/server/db.js'),
-    matchTrace = require('./src/match_trace.js'),
-    classes = require('./src/server/classes.js');
+    dbLoader = require('../src/server/db.js'),
+    matchTrace = require('../src/match_trace.js'),
+    classes = require('../src/server/classes.js');
 
 if (process.argv.length < 3) {
   console.error("Usage: node test_classification.js DATA_DIRECTORY [OSRM_DATA.osrm]");
