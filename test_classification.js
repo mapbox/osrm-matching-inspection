@@ -1,12 +1,9 @@
 #!/bin/node
 
-var TRACE_TABLE_NAME = 'traces';
-    MATCHING_TABLE_NAME = 'matchings';
-
 var path = require('path'),
     fs = require('fs'),
+    lowdb = require('lowdb'),
     async = require('async'),
-    low = require('lowdb'),
     OSRM = require('osrm'),
     OSRMClient = require('osrm-client'),
     dbLoader = require('./src/server/db.js'),
@@ -30,28 +27,40 @@ var directory = process.argv[2],
 if (fs.existsSync(targetFilename)) {
   fs.unlinkSync(targetFilename);
 }
-respDB = low(targetFilename);
+respDB = lowdb(targetFilename);
 
-function getLabeledTraces() {
-  var traceGroups = db(MATCHING_TABLE_NAME)
-                    .filter(function (r) {
-                      return r.cls === classes.nameToId['valid'] ||
-                             r.cls === classes.nameToId['invalid'];
-                     })
-                    .groupBy('id')
-                    .value(),
-      labeledTraces = [],
-      trace;
+function getLabeledTraces(callback) {
 
-  // construct actual array
-  for (var key in traceGroups) {
-    trace = db(TRACE_TABLE_NAME).find({id: traceGroups[key][0].id}).value();
-    labeledTraces.push([trace.file, traceGroups[key]]);
-  }
+  db.all("SELECT traces.id AS id, " +
+         "traces.file AS file, " +
+         "matchings.subIdx AS subIdx, " +
+         "matchings.cls AS cls " +
+         "FROM traces, matchings " +
+         "WHERE (cls = 1 OR cls = 2) AND traces.id = matchings.id " +
+         "ORDER BY id",
+  function(err, rows) {
+    if (err) {
+      callback(err);
+      return;
+    }
+      if (rows.length < 1) return;
+      var labeledTraces = [],
+          currentID,
+          group;
+      for (var i = 0; i < rows.length; i++) {
+        currentID = rows[i].id;
+        group = [];
+        while (i < rows.length && rows[i].id === currentID) {
+            group.push({cls: rows[i].cls, subIdx: rows[i].subIdx, id: rows[i].id});
+            i++;
+        }
+        labeledTraces.push([rows[i-1].file, group]);
+      }
 
-  console.error("Testing " + labeledTraces.length + " labeled traces.");
+      console.error("Testing " + labeledTraces.length + " labeled traces.");
 
-  return labeledTraces;
+      callback(null, labeledTraces);
+  });
 }
 
 function classify(confidence, cls) {
@@ -85,18 +94,17 @@ function classifyTrace(traceGroup, callback) {
           data = {
             'geometry': result.geometry,
             'matched': result.matched_points,
-            'trace': result.indices.map(function(i) {return response.trace[i];}),
+            'trace': result.indices.map(function(i) {return response.trace.coordinates[i];}),
             'cls': cls
           };
+
+      respDB('matchings').push(data);
 
       p  += cls === classes.nameToId['valid'] && 1 || 0;
       n  += cls === classes.nameToId['invalid'] && 1 || 0;
       fp += cls === classes.nameToId['false-valid'] && 1 || 0;
       fn += cls === classes.nameToId['false-invalid'] && 1 || 0;
-
-      respDB(MATCHING_TABLE_NAME).push(data);
     });
-
 
     callback(null, [p, n, fp, fn]);
   });
@@ -125,7 +133,12 @@ function onMapped(error, responses) {
   console.error("-> FN-Rate: " + fn / (fn + p));
 }
 
-console.log("Getting labeled traces...");
-var labeledTraces = getLabeledTraces();
-async.map(labeledTraces, classifyTrace, onMapped);
+console.error("Getting labeled traces...");
+getLabeledTraces( function(err, traces) {
+  if (err) {
+    console.error(e.msg);
+    return;
+  }
+  async.map(traces, classifyTrace, onMapped);
+});
 
