@@ -19,14 +19,12 @@ function importDirectory(db, directory, callback) {
   var traceStatement = db.prepare("INSERT INTO traces(id, file) VALUES (?, ?)");
   files.forEach(function(file) { traceStatement.run(file[0], file[1]); });
   traceStatement.finalize();
-  //db.run("CREATE INDEX traces_index ON traces (id)");
   db.run("END TRANSACTION");
 
   db.run("BEGIN TRANSACTION");
   var matchingStatement = db.prepare("INSERT INTO matchings(id, subIdx, cls) VALUES (?, ?, ?)");
   files.forEach(function(file) { matchingStatement.run(file[0], 0, 0); });
   matchingStatement.finalize();
-  //db.run("CREATE INDEX matchings_index ON matchings (id, subIdx)");
   db.run("END TRANSACTION");
 
   console.error("done.");

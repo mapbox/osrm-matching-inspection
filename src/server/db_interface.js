@@ -22,6 +22,7 @@ function handleTrace(db, res, selectedCls, selectedId) {
     statement = db.prepare("SELECT id, subIdx FROM matchings WHERE cls = ? LIMIT 1");
     statement.all(selectedCls, onRows);
   }
+  statement.finalize();
 }
 
 module.exports = function(app, db) {
@@ -66,6 +67,7 @@ module.exports = function(app, db) {
 
         handleTrace(db, res, selectedCls, row.id);
     });
+    findStatement.finalize();
 
   });
 };
