@@ -19,7 +19,7 @@ To import traces in ```GPX``` or ```CSV``` format contained in a folder ```data`
 
 	node bin/server.js data
 
-This will create a file ```data/clasification_db.json``` which will contain a list of all traces and their classification.
+This will create a file ```data/clasification_db.sqlite``` which will contain a list of all traces and their classification.
 
 ## Starting the frontend
 
@@ -28,10 +28,10 @@ Assuming your GPX traces are contained in a folder ```data``` in the current rep
 Locally run:
 	node bin/server.js data path/to/dataset.osrm
 
-Alternatively if you want to use osrm-routed instead of node-osrm just run:
+Alternatively if you want to use ```osrm-routed``` instead of node-osrm just run:
 	node bin/server.js data
 
-Which expects a osrm-routed server listening on ```http://127.0.0.1:5000```.
+Which expects a ```osrm-routed``` server listening on ```http://127.0.0.1:5000```.
 
 Now you can view the frontend on ```http://127.0.0.1:8337``` in your browser. It will look somewhat like this:
 
@@ -42,10 +42,11 @@ and Viterbi values.
 
 You can use the left and right arrow key to cycle through the traces.
 
-## Classifying
+## Classification
 
 Opening ```http://127.0.0.1:8337/classify.html``` will display a minimal interface for easy classification.
 Pressing 0 will classify as ```unknown```, 1 as ```valid``` and ```2``` as invalid.
 
 The labels will be saved in ```classification_db.sqlite``` which can be used by ```bin/test_classification.js``` to verify the classifier
-implemented inside the OSRM plugin or by ```bin/calibrate_classifier.py``` in to derive better classification values.
+implemented inside the OSRM plugin.
+```bin/test_classification.js``` will also generate ```tested_db.json``` which is needed by ```bin/calibrate_classification.py``` to derive better classification values.
