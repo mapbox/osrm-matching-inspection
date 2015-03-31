@@ -15,8 +15,8 @@ def calc_distance(coords):
     return distance
 
 def spheric_distance(coord1, coord2):
-    lon1, lat1 = coord1
-    lon2, lat2 = coord2
+    lat1, lon1 = coord1
+    lat2, lon2 = coord2
     dlat1 = lat1 * (RAD)
     dlong1 = lon1 * (RAD)
     dlat2 = lat2 * (RAD)
@@ -57,7 +57,7 @@ def decode_polyline(encoded, precision=6):
         index, dlng = _decode_coordinate_diff(encoded, index)
         lat += dlat
         lng += dlng
-        decoded.append((lng / scaling, lat / scaling))
+        decoded.append((lat / scaling, lng / scaling))
 
     return decoded
 
@@ -89,7 +89,8 @@ def compute_feature(d):
     trace_dist = calc_distance(d['trace'])
     if matching_dist == 0:
         return
-    return -math.log(trace_dist / matching_dist)
+    f = -math.log(trace_dist / matching_dist)
+    return f
 
 
 def get_features(db_path):
@@ -149,6 +150,7 @@ if __name__ == '__main__':
 
     print("valid params: %f, %f" % (valid_params[0], valid_params[1]))
     print("invalid params: %f, %f" % (invalid_params[0], invalid_params[1]))
+    print("valid prior: %f" % valid_prior)
     print("valid: %f" % p)
     print("invalid: %f" % n)
     print("false-valid: %f" % fp)
