@@ -88,22 +88,25 @@ function classifyTrace(traceGroup, callback) {
     var p = 0, n = 0, fp = 0, fn = 0;
 
     submatchings.forEach(function(submatching) {
-      var subIdx = submatching.subIdx,
+      var id = submatching.id,
+          subIdx = submatching.subIdx,
           result = response.matchings[subIdx],
           cls = classify(result.confidence, submatching.cls),
           data = {
             'geometry': result.geometry,
             'matched': result.matched_points,
             'trace': result.indices.map(function(i) {return response.trace.coordinates[i];}),
-            'cls': cls
+            'cls': cls,
+            'id': id,
+            'subIdx': subIdx
           };
 
       respDB('matchings').push(data);
 
-      p  += cls === classes.nameToId['valid'] && 1 || 0;
-      n  += cls === classes.nameToId['invalid'] && 1 || 0;
-      fp += cls === classes.nameToId['false-valid'] && 1 || 0;
-      fn += cls === classes.nameToId['false-invalid'] && 1 || 0;
+      p  += cls === classes.nameToId['valid'] ? 1 : 0;
+      n  += cls === classes.nameToId['invalid'] ? 1 : 0;
+      fp += cls === classes.nameToId['false-valid'] ? 1 : 0;
+      fn += cls === classes.nameToId['false-invalid'] ? 1 : 0;
     });
 
     callback(null, [p, n, fp, fn]);
