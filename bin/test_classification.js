@@ -101,6 +101,17 @@ function classifyTrace(traceGroup, callback) {
             'subIdx': subIdx
           };
 
+      if (response.debug) {
+        data.suspicious = response.debug.states.map(function(column, t) {
+          var found = false;
+          for (var i = 0; i < column.length; i++) {
+            found = column[i].chosen && column[i].suspicious;
+            if (found) return t;
+          }
+
+        }).filter(function (idx) { return idx !== undefined; });
+      }
+
       respDB('matchings').push(data);
 
       p  += cls === classes.nameToId['valid'] ? 1 : 0;

@@ -68,15 +68,18 @@ class BayesClassifier:
         self._valid_prior = valid_prior
         self._invalid_prior = invalid_prior
         self._confidence = confidence
+        self._get_prob = lambda d, x: d.pdf(x)
+        if 'pdf' not in dir(dist):
+            self._get_prob = lambda d, x: d.pmf(x)
 
     def _post_valid(self, x):
-        a = self._valid_dist.pdf(x) * self._valid_prior
-        b = self._invalid_dist.pdf(x) * self._invalid_prior
+        a = self._get_prob(self._valid_dist, x) * self._valid_prior
+        b = self._get_prob(self._invalid_dist, x) * self._invalid_prior
         return a / (a+b)
 
     def _post_invalid(self, x):
-        a = self._valid_dist.pdf(x) * self._valid_prior
-        b = self._invalid_dist.pdf(x) * self._invalid_prior
+        a = self._get_prob(self._valid_dist, x) * self._valid_prior
+        b = self._get_prob(self._invalid_dist, x) * self._invalid_prior
         return b / (a+b)
 
     def classify(self, x):
@@ -93,7 +96,7 @@ def compute_feature(d):
     return f
 
 
-def get_features(db_path):
+def get_features(db_path, feature_func=compute_feature):
     data = ""
     with open(db_path, "r") as f:
         data = json.load(f)
@@ -101,7 +104,7 @@ def get_features(db_path):
     valid_features = []
     invalid_features = []
     for m in data['matchings']:
-        f = compute_feature(m)
+        f = feature_func(m)
         if f is None:
             continue
 
@@ -112,16 +115,16 @@ def get_features(db_path):
 
     return (valid_features, invalid_features)
 
-def get_parameters(valid_features, invalid_features):
-    valid_params = scipy.stats.laplace.fit(valid_features)
-    invalid_params = scipy.stats.laplace.fit(invalid_features)
+def get_parameters(valid_features, invalid_features, dist=scipy.stats.laplace):
+    valid_params = dist.fit(valid_features)
+    invalid_params = dist.fit(invalid_features)
     valid_prior = len(valid_features) / (len(valid_features) + len(invalid_features))
     invalid_prior = len(invalid_features) / (len(valid_features) + len(invalid_features))
 
     return (valid_params, valid_prior, invalid_params, invalid_prior)
 
-def run_classficiation(valid_params, valid_prior, invalid_params, invalid_prior):
-    classifier = BayesClassifier(scipy.stats.laplace, valid_params, valid_prior, invalid_params, invalid_prior, 0.0)
+def run_classification(valid_features, valid_params, valid_prior, invalid_features, invalid_params, invalid_prior, dist=scipy.stats.laplace):
+    classifier = BayesClassifier(dist, valid_params, valid_prior, invalid_params, invalid_prior, 0.0)
 
     p = n = fp = fn = 0
     for f in valid_features:
@@ -146,7 +149,7 @@ if __name__ == '__main__':
 
     (valid_params, valid_prior, invalid_params, invalid_prior) = get_parameters(valid_features, invalid_features)
 
-    (p, n, fp, fn) = run_classficiation(valid_params, valid_prior, invalid_params, invalid_prior)
+    (p, n, fp, fn) = run_classification(valid_params, valid_prior, invalid_params, invalid_prior)
 
     print("valid params: %f, %f" % (valid_params[0], valid_params[1]))
     print("invalid params: %f, %f" % (invalid_params[0], invalid_params[1]))
