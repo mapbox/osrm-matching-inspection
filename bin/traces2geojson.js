@@ -1,0 +1,80 @@
+#!/bin/node
+
+var path = require('path'),
+    rs = require('recursive-search'),
+    fs = require('fs'),
+    polyline = require('polyline'),
+    matchTrace = require('../src/match_trace.js'),
+    async = require('async'),
+    OSRM = require('osrm'),
+    OSRMClient = require('osrm-client');
+
+if (process.argv.length < 3) {
+  console.error("Usage: node traces2geojson.js DATA_DIRECTORY [OSRM_DATA.osrm]");
+  console.error("Will print geojson of the matched traces on stdout.");
+  process.exit(1);
+}
+
+var directory = process.argv[2],
+    // TODO fallback to osrm-client if no data is given
+    data = process.argv.length > 3 && path.normalize(process.argv[3]) || undefined,
+    osrm = data && new OSRM(data) || new OSRMClient('http://127.0.0.1:5000');
+
+
+function encode_linestring(coordinates, type, file, confidence) {
+    var data = {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": coordinates,
+        },
+        "properties": {
+            "type": type
+        },
+    };
+
+    if (file) data.properties.file = file;
+    if (confidence) data.properties.confidence = confidence;
+    return data;
+}
+
+function latLngToLngLat(coord) {
+    return [coord[1], coord[0]];
+}
+
+function getGeoJSON(file, callback) {
+  matchTrace(osrm, file, function (err, response) {
+    if (err || !response.matchings) {
+      console.error(err);
+      callback(null, []);
+      return;
+    }
+
+    var polylines = [];
+
+    response.matchings.forEach(function(submatching) {
+      var matched_points = polyline.decode(submatching.geometry, 6).map(latLngToLngLat);
+      polylines.push(encode_linestring(matched_points, "matching", file, submatching.confidence));
+    });
+    polylines.push(encode_linestring(response.trace.coordinates.map(latLngToLngLat), "trace", file));
+
+    callback(null, polylines);
+  });
+}
+
+console.error("Loading files...");
+var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory);
+
+console.error("Getting traces...");
+async.mapLimit(files, 4, getGeoJSON, function (err, polyGroup) {
+  var polylines = [];
+  // flatten
+  for (var i = 0; i < polyGroup; i++) {
+    for (var j = 0; j < polyGrou.length; j++) {
+      polylines.push(polyGroup[j]);
+    }
+  }
+  console.error("Serializing...");
+  console.log(JSON.stringify(polylines));
+});
+
