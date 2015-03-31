@@ -32,7 +32,7 @@ if (osrm) {
   matchingInterface(app, db, osrm);
 }
 
-app.use(express.static(__dirname));
+app.use(express.static(process.cwd()));
 
 console.log("Listening on http://127.0.0.1:8337 ...");
 app.listen(8337);
