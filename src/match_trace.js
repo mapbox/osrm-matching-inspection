@@ -1,5 +1,6 @@
 var csv2geojson = require('csv2geojson'),
     togeojson = require('togeojson'),
+    moment = require('moment'),
     fs = require('fs'),
     jsdom = require('jsdom').jsdom,
     turf = require('turf');
@@ -65,10 +66,17 @@ function filterGeoJSON(geojson) {
         newTimes = [];
 
     if (times && !times[0].match(/^\d+$/)) {
-        times = times.map(function(t) {
-            // js returns dates in milliseconds since epoch
-            return Date.parse(t) / 1000;
-        });
+        // check if for special fucked up date format.
+        if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
+          times = times.map(function (t) {
+              return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
+          });
+        } else {
+          times = times.map(function(t) {
+              // js returns dates in milliseconds since epoch
+              return Math.floor(Date.parse(t) / 1000);
+          });
+        }
     }
 
     newCoords = coords.filter(function(coord, i) {
