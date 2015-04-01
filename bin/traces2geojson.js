@@ -45,7 +45,7 @@ function latLngToLngLat(coord) {
 function getGeoJSON(file, callback) {
   matchTrace(osrm, file, function (err, response) {
     if (err || !response.matchings) {
-      console.error(err);
+      console.error("Could not match: " + file);
       callback(null, []);
       return;
     }
@@ -54,9 +54,11 @@ function getGeoJSON(file, callback) {
 
     response.matchings.forEach(function(submatching) {
       var matched_points = polyline.decode(submatching.geometry, 6).map(latLngToLngLat);
-      polylines.push(encode_linestring(matched_points, "matching", file, submatching.confidence));
+      polylines.push(encode_linestring(matched_points, "matching", null, submatching.confidence));
+
+      var subtrace = submatching.indices.map(function(i) {return response.trace.coordinates[i];}).map(latLngToLngLat);
+      polylines.push(encode_linestring(subtrace, "trace", null, submatching.confidence));
     });
-    polylines.push(encode_linestring(response.trace.coordinates.map(latLngToLngLat), "trace", file));
 
     callback(null, polylines);
   });
@@ -66,12 +68,12 @@ console.error("Loading files...");
 var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory);
 
 console.error("Getting traces...");
-async.mapLimit(files, 4, getGeoJSON, function (err, polyGroup) {
+async.mapLimit(files, 5, getGeoJSON, function (err, polyGroup) {
   var polylines = [];
   // flatten
-  for (var i = 0; i < polyGroup; i++) {
-    for (var j = 0; j < polyGrou.length; j++) {
-      polylines.push(polyGroup[j]);
+  for (var i = 0; i < polyGroup.length; i++) {
+    for (var j = 0; j < polyGroup[i].length; j++) {
+      polylines.push(polyGroup[i][j]);
     }
   }
   console.error("Serializing...");
