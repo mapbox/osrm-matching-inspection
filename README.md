@@ -50,3 +50,39 @@ Pressing 0 will classify as ```unknown```, 1 as ```valid``` and ```2``` as inval
 The labels will be saved in ```classification_db.sqlite``` which can be used by ```bin/test_classification.js``` to verify the classifier
 implemented inside the OSRM plugin.
 ```bin/test_classification.js``` will also generate ```tested_db.json``` which is needed by ```bin/calibrate_classification.py``` to derive better classification values.
+
+## Batch matching
+
+You can batch match a dataset using ```bin/traces2geojson.js data > matched.geojson``` which produces a geojson file containg the following features:
+
+For every sub-matchings:
+```js
+{
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [[lon, lat], ...],
+        },
+        "properties": {
+            "type": "matching"
+            file: "path/to/file"
+            confidence: 0.5 # in [0, 1] -> 1 means very confident, 0 means no confidence
+        }
+}
+```
+
+For every trace fragment:
+```js
+{
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [[lon, lat], ...],
+        },
+        "properties": {
+            "type": "trace"
+            file: "path/to/file"
+            confidence: 0.5 # confidence of the corresponding sub-trace
+        }
+}
+```
