@@ -66,6 +66,7 @@ function getGeoJSON(file, callback) {
 
 console.error("Loading files...");
 var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory);
+console.error(" -> " + files.length + " files. ");
 
 console.error("Getting traces...");
 async.mapLimit(files, 5, getGeoJSON, function (err, polyGroup) {
