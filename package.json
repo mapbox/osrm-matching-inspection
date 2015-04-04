@@ -25,7 +25,9 @@
     "regenbogen": "^1.0.3",
     "request": "^2.54.0",
     "sqlite3": "^3.0.5",
-    "turf": "^2.0.0",
+    "tile-cover": "^2.4.1",
+    "tilebelt": "^0.7.1",
+    "turf": "^2.0.2",
     "xmldom": "^0.1.19"
   },
   "devDependencies": {
