@@ -51,7 +51,7 @@ function filterGeoJSON(geojson) {
   var outputLine = turf.linestring([]),
       outputGeoJSON = turf.featurecollection([]),
       minTimeDiff = 5, // 12 sampels / minute
-      minDistance = 10;
+      minDistance = 20;
 
   if (geojson &&
       geojson.features &&
