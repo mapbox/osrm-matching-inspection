@@ -108,7 +108,10 @@ function filterGeoJSON(geojson) {
   return outputGeoJSON;
 }
 
-function matchTrace(osrm, file, callback) {
+function matchTrace(osrm, file, options, callback) {
+  if (typeof options === 'function' && callback === undefined) {
+      callback = options;
+  }
   fileToGeoJSON(file, function onGeojson(err, geojson) {
     if (err) {
       callback(err);
@@ -123,6 +126,10 @@ function matchTrace(osrm, file, callback) {
     }
 
     trace.classify = true;
+
+    for (var key in options) {
+      trace[key] = options[key];
+    }
 
     osrm.match(trace, function(err, result) {
       if (err) {
