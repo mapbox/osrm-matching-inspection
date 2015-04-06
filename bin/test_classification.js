@@ -81,13 +81,15 @@ function classifyTrace(traceGroup, callback) {
 
     if (!response || !response.matchings)
     {
-      callback(null, []);
+      callback(null, [0, 0, 0, 0]);
       return;
     }
 
     var p = 0, n = 0, fp = 0, fn = 0;
 
     submatchings.forEach(function(submatching) {
+      if (submatching.subIdx >= response.matchings.length) return;
+
       var id = submatching.id,
           subIdx = submatching.subIdx,
           result = response.matchings[subIdx],
@@ -102,14 +104,36 @@ function classifyTrace(traceGroup, callback) {
           };
 
       if (response.debug) {
-        data.suspicious = response.debug.states.map(function(column, t) {
-          var found = false;
-          for (var i = 0; i < column.length; i++) {
-            found = column[i].chosen && column[i].suspicious;
-            if (found) return t;
-          }
+        var states = response.debug.states,
+            chosen_idx;
 
+        chosen_idx = result.indices.map(function(t) {
+          var found = false;
+          for (var i = 0; i < states[t].length; i++) {
+            found = states[t][i].chosen;
+            if (found) return [t, i];
+          }
         }).filter(function (idx) { return idx !== undefined; });
+
+        data.suspicious = chosen_idx.filter(function(idx) {
+          return states[idx[0]][idx[1]].suspicious;
+        });
+
+        data.distance_deltas = [];
+
+        var curr_idx, next_idx;
+        for (var i = 0; i < chosen_idx.length-1; i++) {
+            curr_idx = chosen_idx[i];
+            next_idx = chosen_idx[i+1];
+            var transition = states[curr_idx[0]][curr_idx[1]].transitions.filter(function(t) {
+              return t.to[0] === next_idx[0] && t.to[1] === next_idx[1];
+            });
+            if (transition.length != 1) {
+              console.error("Error: Breakage within a subtrace?!");
+            } else {
+              data.distance_deltas.push(Math.abs(transition[0].properties[3] - transition[0].properties[4]));
+            }
+        }
       }
 
       respDB('matchings').push(data);

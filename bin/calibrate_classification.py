@@ -3,6 +3,7 @@ import json
 import sys
 import os.path
 import math
+import numpy as np
 
 RAD = 0.017453292519943295769236907684886
 earth_radius = 6372797.560856
@@ -141,6 +142,33 @@ def run_classification(valid_features, valid_params, valid_prior, invalid_featur
 
     return (p, n, fp, fn)
 
+def get_matched_distance(feature):
+    dists = [spheric_distance(m, t) for m, t in zip(feature['matched'], feature['trace'])]
+    return dists
+
+def get_distance_deltas(feature):
+    return feature['distance_deltas']
+
+def estimate_gps_precision(db_path):
+    valid_features, _ = get_features(db_path, get_matched_distance)
+    flattened = []
+    for dists in valid_features:
+        flattened += dists
+
+    # Median Absolute Deviation estimator
+    gps_precision = 1.4826 * np.median(flattened)
+    return gps_precision
+
+def estimate_map_beta(db_path):
+    valid_features, _ = get_features(db_path, get_distance_deltas)
+    flattened = []
+    for dists in valid_features:
+        flattened += dists
+
+    # not the estimator given in the paper, but wikipedia sugguests this
+    map_beta = np.mean(flattened)
+    return map_beta
+
 if __name__ == '__main__':
     directory = sys.argv[1]
     db_path = os.path.join(directory, 'tested_db.json')
@@ -149,8 +177,13 @@ if __name__ == '__main__':
 
     (valid_params, valid_prior, invalid_params, invalid_prior) = get_parameters(valid_features, invalid_features)
 
-    (p, n, fp, fn) = run_classification(valid_params, valid_prior, invalid_params, invalid_prior)
+    (p, n, fp, fn) = run_classification(valid_features, valid_params, valid_prior, invalid_features, invalid_params, invalid_prior)
 
+    gps_precision = estimate_gps_precision(db_path)
+    map_beta = estimate_map_beta(db_path)
+
+    print("Map beta: %f" % map_beta)
+    print("GPS precision: %f" % gps_precision)
     print("valid params: %f, %f" % (valid_params[0], valid_params[1]))
     print("invalid params: %f, %f" % (invalid_params[0], invalid_params[1]))
     print("valid prior: %f" % valid_prior)
