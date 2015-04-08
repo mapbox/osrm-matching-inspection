@@ -66,17 +66,20 @@ function filterGeoJSON(geojson) {
         newTimes = [];
 
     if (times && !times[0].match(/^\d+$/)) {
-        // check if for special fucked up date format.
-        if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
-          times = times.map(function (t) {
-              return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
-          });
-        } else {
-          times = times.map(function(t) {
-              // js returns dates in milliseconds since epoch
-              return Math.floor(Date.parse(t) / 1000);
-          });
-        }
+      // check if for special fucked up date format.
+      if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
+        times = times.map(function (t) {
+            return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
+        });
+      } else {
+        times = times.map(function(t) {
+            // js returns dates in milliseconds since epoch
+            return Math.floor(Date.parse(t) / 1000);
+        });
+      }
+    // milli-second based timestamp
+    } else if (times && Math.log(parseInt(times[0])) > 21) {
+      times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
     }
 
     newCoords = coords.filter(function(coord, i) {
