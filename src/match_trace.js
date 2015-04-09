@@ -78,7 +78,7 @@ function filterGeoJSON(geojson) {
         });
       }
     // milli-second based timestamp
-    } else if (times && Math.log(parseInt(times[0])) > 21) {
+    } else if (times && Math.log(parseInt(times[0])) > 23) {
       times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
     }
 
