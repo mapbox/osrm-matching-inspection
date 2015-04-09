@@ -8,7 +8,15 @@ var sqlite3 = require('sqlite3'),
 function importDirectory(db, directory, callback) {
   console.error("Importing.");
   console.error("  - finding trace files...");
-  var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory).map(function(f, i) { return [i, f]; });
+  var exp = /(.gpx|.csv)$/;
+  var files = fs.readdirSync(directory).filter(function (f) { return exp.exec(f); }).map(function(f) { return path.join(directory, f); });
+  // check if we need to do it recursively: WARNING does not scale for some reason.
+  if (files.filter(function(f) { return fs.statSync(f).isDirectory();}).length > 0)
+  {
+    files = rs.recursiveSearchSync(exp, directory);
+  }
+
+  files = files.map(function(f, i) { return [i, f]; });
 
   console.error("  - adding " + files.length + " files to database...");
 
