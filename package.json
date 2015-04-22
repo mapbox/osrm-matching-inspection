@@ -4,8 +4,8 @@
   "description": "Matching debugging GUI",
   "main": "src/matching.js",
   "scripts": {
-    "build-matching": "browserify -d src/frontend/matching.js -s osrm.matching > dist/osrm.matching.js",
-    "build-classify": "browserify -d src/frontend/classify.js -s osrm.classify > dist/osrm.classify.js",
+    "build-matching": "mkdir -p dist; browserify -d src/frontend/matching.js -s osrm.matching > dist/osrm.matching.js",
+    "build-classify": "mkdir -p dist; browserify -d src/frontend/classify.js -s osrm.classify > dist/osrm.classify.js",
     "build": "npm run build-matching && npm run build-classify",
     "prepublish": "npm run build"
   },
