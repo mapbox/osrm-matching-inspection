@@ -27,6 +27,7 @@
     "sqlite3": "^3.0.5",
     "tile-cover": "^2.4.1",
     "tilebelt": "^0.7.1",
+    "togeojson": "^0.11.1",
     "turf": "^2.0.2",
     "xmldom": "^0.1.19"
   },
