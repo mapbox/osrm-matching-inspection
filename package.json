@@ -4,8 +4,8 @@
   "description": "Matching debugging GUI",
   "main": "src/matching.js",
   "scripts": {
-    "build-matching": "browserify -d src/frontend/matching.js -s osrm.matching > dist/osrm.matching.js",
-    "build-classify": "browserify -d src/frontend/classify.js -s osrm.classify > dist/osrm.classify.js",
+    "build-matching": "mkdir -p dist; browserify -d src/frontend/matching.js -s osrm.matching > dist/osrm.matching.js",
+    "build-classify": "mkdir -p dist; browserify -d src/frontend/classify.js -s osrm.classify > dist/osrm.classify.js",
     "build": "npm run build-matching && npm run build-classify",
     "prepublish": "npm run build"
   },
@@ -18,7 +18,7 @@
     "jsdom": "^3.1.2",
     "lowdb": "^0.6.1",
     "moment": "^2.9.0",
-    "osrm": "git://github.com/Project-OSRM/node-osrm.git#dc53afcbd1e0b58700c4aeab62e149b6250127e4",
+    "osrm": "^4.6.0",
     "osrm-client": "0.0.9",
     "polyline": "^0.0.3",
     "recursive-search": "^1.0.1",
@@ -27,6 +27,7 @@
     "sqlite3": "^3.0.5",
     "tile-cover": "^2.4.1",
     "tilebelt": "^0.7.1",
+    "togeojson": "^0.11.1",
     "turf": "^2.0.2",
     "xmldom": "^0.1.19"
   },
