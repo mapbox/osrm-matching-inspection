@@ -74,7 +74,7 @@ function filterGeoJSON(geojson) {
       } else {
         times = times.map(function(t) {
             // js returns dates in milliseconds since epoch
-            return Math.floor(Date.parse(t) / 1000);
+            return Math.floor(Date.parse(t.trim()) / 1000);
         });
       }
     // milli-second based timestamp
