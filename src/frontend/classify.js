@@ -41,8 +41,7 @@ function showNextTrace() {
   var url = 'http://127.0.0.1:8337/trace/unknown/' + traceId + '/next';
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
-    trace = data.trace;
-    showTrace(trace.id);
+    showTrace(data.id);
   });
 }
 
