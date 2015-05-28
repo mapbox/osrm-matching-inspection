@@ -38,11 +38,12 @@ function showTrace(id) {
 }
 
 function showNextTrace() {
-  var url = 'http://127.0.0.1:8337/trace/unknown/' + traceId + '/next';
+  var url = 'http://127.0.0.1:8337/trace/unknown/' + traceId - 1 + '/next'; //traceId starts at 1?
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
-    trace = data.trace;
-    showTrace(trace.id);
+    // trace = data.trace; // data has no trace property 
+    // showTrace(trace.id);
+    showTrace(data.id);
   });
 }
 
@@ -65,8 +66,11 @@ function showPrevMatching() {
 }
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
-var map = L.mapbox.map('map', 'themarex.kel82add');
+var map = L.mapbox.map('map', 'themarex.kel82add'),
+    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']});
+    
 matchingLayer.addTo(map);
+edit.addTo(map);
 
 var id = parseInt(utils.getURLParam('id'));
 if (id) {
