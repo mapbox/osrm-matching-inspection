@@ -27,6 +27,7 @@ function geojsonToTrace(geojson) {
   return trace;
 }
 
+//added .geojson
 function fileToGeoJSON(file, callback) {
   fs.readFile(file, 'utf-8', function(err, content) {
     if (err) {
@@ -40,6 +41,8 @@ function fileToGeoJSON(file, callback) {
       csv2geojson.csv2geojson(content, function(error, geojson) {
         callback(error, geojson && csv2geojson.toLine(geojson));
       });
+    } else if (/\.geojson$/g.test(file)) {
+        callback(null, JSON.parse(content));
     } else {
       callback(new Error("Unknown file format: " + file));
     }
@@ -65,6 +68,7 @@ function filterGeoJSON(geojson) {
         newCoords,
         newTimes = [];
 
+    // added no times option
     if (times && !times[0].match(/^\d+$/)) {
       // check if for special fucked up date format.
       if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
@@ -80,6 +84,8 @@ function filterGeoJSON(geojson) {
     // milli-second based timestamp
     } else if (times && Math.log(parseInt(times[0])) > 23) {
       times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
+    } else {
+        times = undefined;
     }
 
     newCoords = coords.filter(function(coord, i) {
@@ -87,15 +93,21 @@ function filterGeoJSON(geojson) {
           takePoint = true;
 
       if (i !== 0) {
-        takePoint = (times[i] - prevTime > minTimeDiff) &&
+        if (times) {
+            takePoint = (times[i] - prevTime > minTimeDiff) &&
                     (turf.distance(prevCoord, p)*1000 > minDistance);
+        } else {
+            takePoint = turf.distance(prevCoord, p)*1000 > minDistance;
+        }
       }
 
       if (takePoint)
       {
         prevCoord = p;
-        prevTime = times[i];
-        newTimes.push(times[i]);
+        if (times) {
+            prevTime = times[i];
+            newTimes.push(times[i]);
+        }
       }
 
       return takePoint;
