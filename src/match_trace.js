@@ -115,7 +115,9 @@ function filterGeoJSON(geojson) {
 
     if (newCoords.length > 1) {
       outputLine.geometry.coordinates = newCoords;
-      outputLine.properties = { coordTimes: newTimes };
+      if (times) {
+          outputLine.properties = { coordTimes: newTimes };
+      }
       outputGeoJSON.features.push(outputLine);
     }
   }
