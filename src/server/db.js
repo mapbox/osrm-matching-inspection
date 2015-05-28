@@ -8,7 +8,7 @@ var sqlite3 = require('sqlite3'),
 function importDirectory(db, directory, callback) {
   console.error("Importing.");
   console.error("  - finding trace files...");
-  var exp = /(.gpx|.csv)$/;
+  var exp = /(.gpx|.csv|.geojson)$/;
   var files = fs.readdirSync(directory).filter(function (f) { return exp.exec(f); }).map(function(f) { return path.join(directory, f); });
   // check if we need to do it recursively: WARNING does not scale for some reason.
   if (files.filter(function(f) { return fs.statSync(f).isDirectory();}).length > 0)
