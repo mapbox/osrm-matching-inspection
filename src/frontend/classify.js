@@ -37,8 +37,8 @@ function showTrace(id) {
   request.get({uri: 'http://127.0.0.1:8337/match/' + id, json: true}, onMatched);
 }
 
-function showNextTrace() {
-  var url = 'http://127.0.0.1:8337/trace/unknown/' + traceId - 1 + '/next'; //traceId starts at 1?
+function showNextTrace(traceId) {
+  var url = 'http://127.0.0.1:8337/trace/unknown/' + (traceId - 1) + '/next'; //traceId starts at 1?
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
     // trace = data.trace; // data has no trace property 
@@ -54,7 +54,7 @@ function showNextMatching() {
       matchingLayer.update([matchings[subTraceIdx]]);
       window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
   } else {
-    showNextTrace();
+    showNextTrace(traceId);
   }
 }
 function showPrevMatching() {
@@ -77,7 +77,7 @@ if (id) {
   showTrace(id);
 } else {
   // next after -1 => 0
-  showNextTrace(-1);
+  showNextTrace(traceId);
 }
 
 $('body').on('keydown', function(e) {
