@@ -3,7 +3,7 @@ var diagram = require('./diagram.js'),
     layers = require('./layers.js'),
     utils = require('./utils.js'),
     matchingLayer = layers.debugMatchingLayer(),
-    history,
+    history = [],
     traceLine,
     traceLineOutline = [],
     trellis;
