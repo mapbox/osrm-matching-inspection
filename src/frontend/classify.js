@@ -37,12 +37,13 @@ function showTrace(id) {
   request.get({uri: 'http://127.0.0.1:8337/match/' + id, json: true}, onMatched);
 }
 
-function showNextTrace() {
-  var url = 'http://127.0.0.1:8337/trace/unknown/' + traceId + '/next';
+function showNextTrace(traceId) {
+  var url = 'http://127.0.0.1:8337/trace/unknown/' + (traceId - 1) + '/next'; //traceId starts at 1?
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
-    trace = data.trace;
-    showTrace(trace.id);
+    // trace = data.trace; // data has no trace property 
+    // showTrace(trace.id);
+    showTrace(data.id);
   });
 }
 
@@ -53,7 +54,7 @@ function showNextMatching() {
       matchingLayer.update([matchings[subTraceIdx]]);
       window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
   } else {
-    showNextTrace();
+    showNextTrace(traceId);
   }
 }
 function showPrevMatching() {
@@ -65,15 +66,18 @@ function showPrevMatching() {
 }
 
 L.mapbox.accessToken = 'pk.eyJ1IjoidGhlbWFyZXgiLCJhIjoiSXE4SDlndyJ9.ihcqCB31K7RtzmMDhPzW2g';
-var map = L.mapbox.map('map', 'themarex.kel82add');
+var map = L.mapbox.map('map', 'themarex.kel82add'),
+    edit = new L.Control.EditInOSM({position: 'topright', widget: 'multiButton', editors: ['id']});
+    
 matchingLayer.addTo(map);
+edit.addTo(map);
 
 var id = parseInt(utils.getURLParam('id'));
 if (id) {
   showTrace(id);
 } else {
   // next after -1 => 0
-  showNextTrace(-1);
+  showNextTrace(traceId);
 }
 
 $('body').on('keydown', function(e) {

@@ -4,6 +4,8 @@ var diagram = require('./diagram.js'),
     utils = require('./utils.js'),
     matchingLayer = layers.debugMatchingLayer(),
     history = [],
+    traceLine,
+    traceLineOutline = [],
     trellis;
 
 function updateTransitionInfo(p) {
@@ -24,8 +26,12 @@ function onMatched(response) {
       matchings = response.matchings,
       trace = response.trace;
 
+  if (traceLine) map.removeLayer(traceLine);
+  if (traceLineOutline) map.removeLayer(traceLineOutline);
   d3.selectAll("#trellis").remove();
 
+  traceLineOutline = L.polyline(response.trace.coordinates, {color: 'black', opacity: 0.3, weight: 7}).addTo(map);
+  traceLine = L.polyline(response.trace.coordinates, {color: 'white', opacity: 0.7, weight: 5, lineCap: 'butt', dashArray: [10, 5]}).addTo(map);
   trellis = diagram.trellis(d3.select("#info"), matchingLayer, states, breakage);
   trellis.on('transitionselected', updateTransitionInfo);
   matchingLayer.update(trace.coordinates, states, matchings);
