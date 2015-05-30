@@ -16,6 +16,7 @@ make && sudo make install
 ```
 
 Run:
+
     npm install
 
 To install the server components. Then do:
@@ -37,6 +38,7 @@ This will create a file ```data/clasification_db.sqlite``` which will contain a 
 Assuming your GPX traces are contained in a folder ```data``` in the current repository root:
 
 Locally run:
+
 	node bin/server.js data path/to/dataset.osrm
 
 Alternatively if you want to use ```osrm-routed``` instead of node-osrm just run:
