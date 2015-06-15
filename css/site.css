@@ -31,13 +31,15 @@
   cursor: default;
 }
 
-
 #probs {
-  width: 400px;
-  height: 120px;
+ width: 29%;
+  height: 30%;
   position: absolute;
-  top: 5px;
-  left: 45px;
+  bottom: 1%;
+  left: 0%;
+  padding-top: 1%;
+  padding-left: 2%;
+  overflow: scroll;
 }
 
 .classify {
@@ -53,14 +55,14 @@
   left: 40%;
 }
 
-
 #info {
   position: absolute;
-  left: 5px;
-  bottom: 5px;
-  right: 5px;
-  height: 350px;
+  left: 32%;
+  bottom: 1%;
+  width: 68%;
+  height: 30%;
   overflow: scroll;
+  padding-top: 1%;
 }
 
 .info {
@@ -78,3 +80,27 @@
   display: none;
 }
 
+#user_input {
+  font-size: 9pt;
+  line-height: 200%;
+  width: 90%; 
+}
+
+#user_input * {  
+  margin-left:2px;
+}
+
+#long_name {
+  font-weight:bold;
+}
+
+#comment, #other{
+  width: 50% ;
+}
+
+/*#loader {
+  height:5%;
+  width:5%;
+  padding-left: 2px;
+  display : none
+}*/
