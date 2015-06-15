@@ -1,7 +1,7 @@
 var matchTrace = require('../match_trace.js');
 
 module.exports = function(app, db, osrm) {
-  app.get('/match/:id', function(req, res) {
+  app.get('/match/:id/:subId', function(req, res) {
     var id = parseInt(req.params.id),
         subId = parseInt(req.params.subId);
 
