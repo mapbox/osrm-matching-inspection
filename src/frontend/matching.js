@@ -5,6 +5,7 @@ var diagram = require('./diagram.js'),
     matchingLayer = layers.debugMatchingLayer(),
     history = [],
     traceLine,
+    total = 0,
     current_subId = 0,
     traceLineOutline = [],
     trellis;
