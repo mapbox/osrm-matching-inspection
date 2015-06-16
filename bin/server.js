@@ -7,8 +7,6 @@ var express = require('express'),
     path = require('path'),
     dbLoader = require('../src/server/db.js'),
     dbInterface = require('../src/server/db_interface.js'),
-    commentInterface = require('../src/server/comment_interface.js'),
-    matchSaveInterface = require('../src/server/match_save_interface.js'),
     clsInterface = require('../src/server/classification_interface.js'),
     matchingInterface = require('../src/server/matching_interface.js'),
     OSRM = require('osrm'),
@@ -28,12 +26,10 @@ var directory = process.argv[2],
 
 dbInterface(app, db);
 clsInterface(app, db);
-commentInterface(app, db);
 
 if (osrm) {
   console.log("Matching: Enabled.");
   matchingInterface(app, db, osrm);
-  matchSaveInterface(app, db, osrm);
 }
 
 app.use(express.static(process.cwd()));

@@ -79,28 +79,3 @@
 .leaflet-routing-container {
   display: none;
 }
-
-#user_input {
-  font-size: 9pt;
-  line-height: 200%;
-  width: 90%; 
-}
-
-#user_input * {  
-  margin-left:2px;
-}
-
-#long_name {
-  font-weight:bold;
-}
-
-#comment, #other{
-  width: 50% ;
-}
-
-/*#loader {
-  height:5%;
-  width:5%;
-  padding-left: 2px;
-  display : none
-}*/
