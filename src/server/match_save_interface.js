@@ -15,15 +15,16 @@ module.exports = function(app, db, osrm) {
         file_match = './data/export_matching.geojson';
     var id = 0, 
     sum = 0,
-    subId;
+    subId,
+    total = 5;
   
     db.get("SELECT file FROM traces WHERE id = ? LIMIT 1", id, function(err, row) {
       if (err) {
         res.send(JSON.stringify({status: "error"}));
         return;
       }
-      for (subId = 0; subId < total; subId++) {
-        matchTrace(subId, id, osrm, row.file, function(err, result) {
+      for (subId_z =0; subId_z < total_z; subId_z++) {
+        matchTrace(subId_z, id, osrm, row.file, function(err, result) {
           if (err) {
             res.send(JSON.stringify({status: "error"}));
             return;
@@ -37,7 +38,7 @@ module.exports = function(app, db, osrm) {
   
           result.matchings.forEach( function (matching){
             fs.appendFile(file_match, (feature_start + JSON.stringify(matching.matched_points) + " } }"));
-            if (sum ===total){
+            if (sum ===total_z){
               fs.appendFile(file_match, "\n]\n}");
                 res.send({status: "ok", message: "Features saved!"});   
             } else fs.appendFile(file_match, ",\n");
