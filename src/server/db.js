@@ -22,7 +22,6 @@ function importDirectory(db, directory, callback) {
 
   db.run("CREATE TABLE traces (id INTEGER PRIMARY KEY, file TEXT)");
   db.run("CREATE TABLE matchings (id INTEGER, subIdx INTEGER, cls INTEGER, data TEXT, PRIMARY KEY (id, subIdx))");
-  db.run("CREATE TABLE matchings_comments (file_name TEXT, route_id INTEGER, confidence DOUBLE, comment TEXT)");
 
   db.run("BEGIN TRANSACTION");
   var traceStatement = db.prepare("INSERT INTO traces(id, file) VALUES (?, ?)");

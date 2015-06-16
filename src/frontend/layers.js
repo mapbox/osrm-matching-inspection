@@ -4,8 +4,7 @@ var polyline = require('polyline'),
 
 var MatchingLayer = L.Class.extend({
   options: {
-    style: {color: 'blue', weight: 5},
-    confidence: {value: 1}
+    style: {color: 'blue', weight: 5}
   },
 
   initialize: function(options) {
@@ -19,15 +18,12 @@ var MatchingLayer = L.Class.extend({
 
     subtraces.forEach(function (t) {
       var style = this.options.style;
-      var confidence = this.options.confidence;
       if (t.confidence !== undefined)
       {
         style.color = this._gradient(t.confidence);
-        confidence.value=t.confidence;
       }
       var line = L.polyline(polyline.decode(t.geometry, 6)/*t.matched_points*/, style);
       this._group.addLayer(line);
-      // line.enableEdit();
     }.bind(this));
 
   },
@@ -83,7 +79,7 @@ var DebugMatchingLayer = MatchingLayer.extend({
 
     m.persistent = m.persistent || persistent;
 
-    m.setStyle({radius: 14, fillOpacity: 0.9, stroke: true, weight: 1, color: '#000', opacity: 0.8});
+    m.setStyle({radius: 12, fillOpacity: 0.9, stroke: true, weight: 1, color: '#000', opacity: 0.8});
   },
 
   restoreCandidate: function(idx, force) {
@@ -114,7 +110,7 @@ var DebugMatchingLayer = MatchingLayer.extend({
 
   _addCandidateMarkers: function(candidates, color) {
     var layer = L.layerGroup(),
-        style = {stroke: false, fill: true, fillColor: color, radius: 8, fillOpacity: 0.5, className:'candidate_points'};
+        style = {stroke: false, fill: true, fillColor: color, radius: 8, fillOpacity: 0.5};
     candidates.map(function (candidate) {
       layer.addLayer(L.circleMarker(candidate.coordinate, style));
     });
