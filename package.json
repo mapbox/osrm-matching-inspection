@@ -18,7 +18,7 @@
     "jsdom": "^3.1.2",
     "lowdb": "^0.6.1",
     "moment": "^2.9.0",
-    "osrm": "^4.6.0",
+    "osrm": "https://github.com/Project-OSRM/node-osrm/tarball/debug",
     "osrm-client": "0.0.9",
     "polyline": "^0.0.3",
     "recursive-search": "^1.0.1",
