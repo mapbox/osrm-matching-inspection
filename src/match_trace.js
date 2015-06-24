@@ -50,7 +50,8 @@ function fileToGeoJSON(file, callback) {
 }
 
 // reduce sample rate to sane value filter blobs
-function filterGeoJSON(geojson) {
+// subId: id of feature in file 
+function filterGeoJSON(geojson, subId) {
   var outputLine = turf.linestring([]),
       outputGeoJSON = turf.featurecollection([]),
       minTimeDiff = 5, // 12 sampels / minute
@@ -59,8 +60,8 @@ function filterGeoJSON(geojson) {
   if (geojson &&
       geojson.features &&
       geojson.features.length &&
-      geojson.features[0].geometry) {
-    var feature = geojson.features[0],
+      geojson.features[subId].geometry) {
+    var feature = geojson.features[subId],
         coords = feature.geometry.coordinates,
         times = feature.properties && feature.properties.coordTimes || null,
         prevCoord,
@@ -69,9 +70,9 @@ function filterGeoJSON(geojson) {
         newTimes = [];
 
     // added no times option
-    if (times && !times[0].match(/^\d+$/)) {
+    if (times && !times[subId].match(/^\d+$/)) {
       // check if for special fucked up date format.
-      if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
+      if (times[subId].match(/^\d\d\d\d-\d-\d\d/)) {
         times = times.map(function (t) {
             return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
         });
@@ -82,7 +83,7 @@ function filterGeoJSON(geojson) {
         });
       }
     // milli-second based timestamp
-    } else if (times && Math.log(parseInt(times[0])) > 23) {
+    } else if (times && Math.log(parseInt(times[subId])) > 23) {
       times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
     } else {
         times = undefined;
@@ -125,7 +126,7 @@ function filterGeoJSON(geojson) {
   return outputGeoJSON;
 }
 
-function matchTrace(osrm, file, options, callback) {
+function matchTrace(subId, osrm, file, options, callback) {
   if (typeof options === 'function' && callback === undefined) {
       callback = options;
   }
@@ -134,7 +135,7 @@ function matchTrace(osrm, file, options, callback) {
       callback(err);
       return;
     }
-    var trace = geojsonToTrace(filterGeoJSON(geojson));
+    var trace = geojsonToTrace(filterGeoJSON(geojson, subId));
 
     if (trace.coordinates.length < 2)
     {
@@ -155,6 +156,8 @@ function matchTrace(osrm, file, options, callback) {
       }
       // also return original trace
       result.trace = trace;
+      result.subId = subId;
+      result.total = geojson.features.length;
       callback(null, result);
     });
   });
