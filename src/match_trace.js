@@ -42,7 +42,14 @@ function fileToGeoJSON(file, callback) {
         callback(error, geojson && csv2geojson.toLine(geojson));
       });
     } else if (/\.geojson$/g.test(file)) {
-        callback(null, JSON.parse(content));
+      var geojson = JSON.parse(content);
+      if (geojson.type === "Feature") {
+        geojson = {
+          type: 'FeatureCollection',
+          features: [geojson],
+        };
+      }
+      callback(null, geojson);
     } else {
       callback(new Error("Unknown file format: " + file));
     }
@@ -56,70 +63,65 @@ function filterGeoJSON(geojson) {
       minTimeDiff = 5, // 12 sampels / minute
       minDistance = 20;
 
-  if (geojson &&
-      geojson.features &&
-      geojson.features.length &&
-      geojson.features[0].geometry) {
-    var feature = geojson.features[0],
-        coords = feature.geometry.coordinates,
-        times = feature.properties && feature.properties.coordTimes || null,
-        prevCoord,
-        prevTime,
-        newCoords,
-        newTimes = [];
+  var feature = geojson.features[0],
+      coords = feature.geometry.coordinates,
+      times = feature.properties && feature.properties.coordTimes || null,
+      prevCoord,
+      prevTime,
+      newCoords,
+      newTimes = [];
 
-    // added no times option
-    if (times && !times[0].match(/^\d+$/)) {
-      // check if for special fucked up date format.
-      if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
-        times = times.map(function (t) {
-            return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
-        });
-      } else {
-        times = times.map(function(t) {
-            // js returns dates in milliseconds since epoch
-            return Math.floor(Date.parse(t.trim()) / 1000);
-        });
-      }
-    // milli-second based timestamp
-    } else if (times && Math.log(parseInt(times[0])) > 23) {
-      times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
+  // added no times option
+  if (times && !times[0].match(/^\d+$/)) {
+    // check if for special fucked up date format.
+    if (times[0].match(/^\d\d\d\d-\d-\d\d/)) {
+      times = times.map(function (t) {
+          return Math.floor(moment(t, "YYYY-M-DDTHH:mm:ss") / 1000);
+      });
     } else {
-        times = undefined;
+      times = times.map(function(t) {
+          // js returns dates in milliseconds since epoch
+          return Math.floor(Date.parse(t.trim()) / 1000);
+      });
     }
+  // milli-second based timestamp
+  } else if (times && Math.log(parseInt(times[0])) > 23) {
+    times = times.map(function(t) { return Math.floor(parseInt(t) / 1000); });
+  } else {
+      times = undefined;
+  }
 
-    newCoords = coords.filter(function(coord, i) {
-      var p = turf.point(coord),
-          takePoint = true;
+  newCoords = coords.filter(function(coord, i) {
+    var p = turf.point(coord),
+        takePoint = true;
 
-      if (i !== 0) {
-        if (times) {
-            takePoint = (times[i] - prevTime > minTimeDiff) &&
-                    (turf.distance(prevCoord, p)*1000 > minDistance);
-        } else {
-            takePoint = turf.distance(prevCoord, p)*1000 > minDistance;
-        }
-      }
-
-      if (takePoint)
-      {
-        prevCoord = p;
-        if (times) {
-            prevTime = times[i];
-            newTimes.push(times[i]);
-        }
-      }
-
-      return takePoint;
-    });
-
-    if (newCoords.length > 1) {
-      outputLine.geometry.coordinates = newCoords;
+    if (i !== 0) {
       if (times) {
-          outputLine.properties = { coordTimes: newTimes };
+          takePoint = (times[i] - prevTime > minTimeDiff) &&
+                  (turf.distance(prevCoord, p)*1000 > minDistance);
+      } else {
+          takePoint = turf.distance(prevCoord, p)*1000 > minDistance;
       }
-      outputGeoJSON.features.push(outputLine);
     }
+
+    if (takePoint)
+    {
+      prevCoord = p;
+      if (times) {
+          prevTime = times[i];
+          newTimes.push(times[i]);
+      }
+    }
+
+    return takePoint;
+  });
+
+  if (newCoords.length > 1) {
+    outputLine.geometry.coordinates = newCoords;
+    if (times) {
+        outputLine.properties = { coordTimes: newTimes };
+    }
+    outputGeoJSON.features.push(outputLine);
   }
 
   return outputGeoJSON;

@@ -20,8 +20,16 @@ if (process.argv.length < 3) {
 var directory = process.argv[2],
     // TODO fallback to osrm-client if no data is given
     data = process.argv.length > 3 && path.normalize(process.argv[3]) || undefined,
-    osrm = data && new OSRM(data) || new OSRMClient('http://127.0.0.1:5000'),
+    osrm;
     db = dbLoader(directory);
+
+if (data) {
+  console.log("Loading data from " + data);
+  osrm = new OSRM(data);
+} else {
+  console.log("Connecting to 127.0.0.1:5000");
+  osrm = new OSRMClient('http://127.0.0.1:5000');
+}
 
 
 dbInterface(app, db);
