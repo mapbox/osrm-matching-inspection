@@ -31,11 +31,11 @@ Run:
 
 To download and compile `node-osrm` from source.
 
-##ä Client side components
+## Client side components
 
 Run:
 
-    bower install
+    bower install && make
 
 To install the front-end components.
 
@@ -43,7 +43,7 @@ To install the front-end components.
 
 To import traces in ```GPX``` or ```CSV``` format contained in a folder ```data``` to the labeling database run:
 
-	node bin/server.js data
+    node bin/server.js data
 
 This will create a file ```data/clasification_db.sqlite``` which will contain a list of all traces and their classification.
 
@@ -53,10 +53,11 @@ Assuming your GPX traces are contained in a folder ```data``` in the current rep
 
 Locally run:
 
-	node bin/server.js data path/to/dataset.osrm
+    node bin/server.js data path/to/dataset.osrm
 
 Alternatively if you want to use ```osrm-routed``` instead of node-osrm just run:
-	node bin/server.js data
+
+    node bin/server.js data
 
 Which expects a ```osrm-routed``` server listening on ```http://127.0.0.1:5000```.
 
