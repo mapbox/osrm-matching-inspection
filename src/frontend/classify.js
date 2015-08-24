@@ -8,7 +8,7 @@ var trace = {},
     traceLine,
     traceLineOutline,
     matchings = [],
-    traceId = 0,
+    traceId = -1,
     subTraceIdx = 0;
 
 function onMatched(err, pkg, response) {
@@ -37,8 +37,8 @@ function showTrace(id) {
   request.get({uri: 'http://127.0.0.1:8337/match/' + id, json: true}, onMatched);
 }
 
-function showNextTrace(traceId) {
-  var url = 'http://127.0.0.1:8337/trace/unknown/' + (traceId - 1) + '/next'; //traceId starts at 1?
+function showNextTrace(id) {
+  var url = 'http://127.0.0.1:8337/trace/unknown/' + id + '/next';
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
     // trace = data.trace; // data has no trace property 

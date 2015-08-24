@@ -12,7 +12,7 @@ var path = require('path'),
 
 if (process.argv.length < 3) {
   console.error("Usage: node test_classification.js DATA_DIRECTORY [OSRM_DATA.osrm]");
-  console.error("Will create tested_db.js DATA_DIRECTORY");
+  console.error("Will create tested_db.json DATA_DIRECTORY");
   process.exit(1);
 }
 
