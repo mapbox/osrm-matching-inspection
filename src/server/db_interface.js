@@ -54,7 +54,7 @@ module.exports = function(app, db) {
         selectedId = parseInt(req.params.id);
 
     if (selectedCls === undefined || isNaN(selectedId)) {
-      res.senVd(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
+      res.send(JSON.stringify({status: "error", message: "Invalid arguments: " + JSON.stringify(req.params)}));
       return;
     }
 
