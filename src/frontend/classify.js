@@ -8,13 +8,18 @@ var trace = {},
     traceLine,
     traceLineOutline,
     matchings = [],
-    traceId = -1,
+    currentTraceId = -1,
     subTraceIdx = 0;
 
 function onMatched(err, pkg, response) {
   if (err) {
       console.log(err);
       return;
+  }
+
+  if (!response.matchings) {
+    console.log(response.status);
+    return;
   }
 
   subTraceIdx = 0;
@@ -26,42 +31,40 @@ function onMatched(err, pkg, response) {
 
   matchings = response.matchings;
   // skip trace
-  if (matchings === undefined) showNextTrace();
+  if (matchings === undefined) showNextMatching();
   matchingLayer.update([matchings[subTraceIdx]]);
   map.fitBounds(matchingLayer.getBounds());
 }
 
-function showTrace(id) {
-  window.document.title = "Classify (" + id + " / " + subTraceIdx + ")";
-  traceId = id;
-  request.get({uri: 'http://127.0.0.1:8337/match/' + id, json: true}, onMatched);
+function showTrace(traceId) {
+  window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
+  currentTraceId = traceId;
+  request.get({uri: 'http://127.0.0.1:8337/match/' + traceId, json: true}, onMatched);
 }
 
 function showNextTrace(id) {
   var url = 'http://127.0.0.1:8337/trace/unknown/' + id + '/next';
 
   request.get({uri: url, json: true}, function(err, pkg, data) {
-    // trace = data.trace; // data has no trace property 
-    // showTrace(trace.id);
     showTrace(data.id);
   });
 }
 
 function showNextMatching() {
-  if (subTraceIdx < matchings.length-1)
+  if (matchings && subTraceIdx < matchings.length-1)
   {
       subTraceIdx++;
       matchingLayer.update([matchings[subTraceIdx]]);
-      window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
+      window.document.title = "Classify (" + currentTraceId + " / " + subTraceIdx + ")";
   } else {
-    showNextTrace(traceId);
+    showNextTrace(currentTraceId);
   }
 }
 function showPrevMatching() {
   if (subTraceIdx > 0) {
     subTraceIdx--;
     matchingLayer.update([matchings[subTraceIdx]]);
-    window.document.title = "Classify (" + traceId + " / " + subTraceIdx + ")";
+    window.document.title = "Classify (" + currentTraceId + " / " + subTraceIdx + ")";
   }
 }
 
@@ -72,24 +75,24 @@ var map = L.mapbox.map('map', 'themarex.kel82add'),
 matchingLayer.addTo(map);
 edit.addTo(map);
 
-var id = parseInt(utils.getURLParam('id'));
-if (id) {
-  showTrace(id);
-} else {
+var param_id = parseInt(utils.getURLParam('id'));
+if (param_id === undefined || isNaN(param_id)) {
   // next after -1 => 0
-  showNextTrace(traceId);
+  showNextTrace(currentTraceId);
+} else {
+  showTrace(param_id);
 }
 
 $('body').on('keydown', function(e) {
-  if (e.which === 39) showNextMatching();
-  if (e.which === 37) showPrevMatching();
+  if (e.which === 39) { showNextMatching(); return; }
+  if (e.which === 37) { showPrevMatching(); return; }
 
   var clsIdx = e.which - 48;
   if (clsIdx >= 0 && clsIdx < classes.length) classifyCurrentTrace(classes[clsIdx]);
 });
 
 function classifyCurrentTrace(cls) {
-  var url = 'http://127.0.0.1:8337/classify/' + traceId + '/' + subTraceIdx + '/' + cls;
+  var url = 'http://127.0.0.1:8337/classify/' + currentTraceId + '/' + subTraceIdx + '/' + cls;
   request.get({uri: url, json: true}, showNextMatching);
 }
 
