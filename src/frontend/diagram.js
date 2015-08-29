@@ -47,6 +47,7 @@ var Trellis = L.Class.extend({
           var gradient = regenbogen(['white', 'lime']);
           return arr.concat(l.map(function(s, j) {
             var normalized_viterbi = (s.viterbi - minViterbi[i]) / (maxViterbi[i] - minViterbi[i]);
+            if (isNaN(normalized_viterbi)) normalized_viterbi = 1.0;
             return {
               x: layout.getNodeX(i, j),
               y: layout.getNodeY(i, j),
