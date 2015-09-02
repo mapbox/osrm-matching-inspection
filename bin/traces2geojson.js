@@ -65,7 +65,7 @@ function getGeoJSON(file, callback) {
 }
 
 console.error("Loading files...");
-var files = rs.recursiveSearchSync(/(.gpx|.csv)$/, directory);
+var files = rs.recursiveSearchSync(/(.gpx|.csv|.geojson)$/, directory).slice(0, 100);
 console.error(" -> " + files.length + " files. ");
 
 console.error("Getting traces...");
